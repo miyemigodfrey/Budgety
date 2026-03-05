@@ -1,6 +1,5 @@
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import popcorn from "@/assets/popcorn.png";
 
 function TransactionPage() {
 	return (
@@ -14,7 +13,7 @@ function TransactionPage() {
 
 					<div className=" flex flex-col items-center align-center gap-y-3 pt-16">
 						<img
-							src={popcorn}
+							src=""
 							alt="A Popcorn picture "
 							className="w-[70%] shadow-2xl"
 						/>
