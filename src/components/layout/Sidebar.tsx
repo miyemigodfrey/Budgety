@@ -29,7 +29,7 @@ export default function Sidebar() {
 						<Link
 							key={menu.id}
 							to={menu.url}
-							className={`flex items-center gap-3 px-4 py-3 rounded-lg transition
+							className={`flex w-full items-center gap-3 px-4 py-3 rounded-lg transition
                 ${isActive ? "bg-blue-500 text-white" : "hover:bg-blue-200"}
               `}>
 							<Icon size={18} />

@@ -22,7 +22,7 @@ function Dashboard() {
 					<img
 						src={budgetydash}
 						alt="Dashboard illustration"
-						className="w-full md:w-[80%] drop-shadow-2xl rounded-xl border-4 border-gray-100 contrast-125 saturate-125"
+						className="w-full md:w-[70%] lg:w-[60%] drop-shadow-2xl rounded-xl border-4 border-gray-100 contrast-125 saturate-125"
 					/>
 				)}
 
@@ -35,7 +35,7 @@ function Dashboard() {
 					</div>
 				)}
 
-				<div className="mt-6 p-5 bg-white rounded-3xl shadow-2xl flex flex-col items-center gap-y-3 w-full md:w-[60%]">
+				<div className="mt-6 p-5 bg-white rounded-3xl shadow-2xl flex flex-col items-center gap-y-3 w-full md:w-[60%] lg:w-[45%]">
 					<div className="flex flex-col items-center space-y-2 text-center">
 						<h2 className="text-2xl font-semibold">
 							Set Up your Budget Workspace

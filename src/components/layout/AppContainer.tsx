@@ -9,11 +9,11 @@ export default function AppContainer({
 }) {
 	return (
 		<div className="min-h-screen flex bg-gray-200 ">
-			<aside className="hidden fixed md:flex md:w-64 lg:w-72 bg-white border-r border-gray-300 p-4">
+			<aside className="hidden md:flex md:w-56 lg:w-64 bg-white border-r border-gray-300 p-4 fixed top-0 left-0 bottom-0 z-20">
 				<Sidebar />
 			</aside>
 
-			<div className="flex-1 flex flex-col min-h-screen pb-16 md:pb-0">
+			<div className="flex-1 flex flex-col min-h-screen pb-16 md:pb-0 md:ml-56 lg:ml-64">
 				<main className="flex-1 md:overflow-y-auto">{children}</main>
 				<Navbar />
 			</div>
