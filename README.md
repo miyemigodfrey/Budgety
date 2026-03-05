@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
@@ -71,3 +72,7 @@ export default defineConfig([
   },
 ])
 ```
+=======
+# Budgety
+Budgety is a privacy-focused personal budgeting app that lets user manage multiple financial sources, track transactions, and calculate real-time balances - all locally without bank intergration.
+>>>>>>> f18517d4bf0b4dc0f0b81b2258be84315d8b7e5f
