@@ -1,4 +1,4 @@
-import DonutChart from "@/components/charts/DonutChart";
+import DonutChart from "@/components/charts/InflowChart";
 import {
 	ClipboardList,
 	Settings,

@@ -9,7 +9,7 @@ type DonutChartProps = {
 	data: number[];
 };
 
-export default function DonutChart({ labels, data }: DonutChartProps) {
+export default function InflowOverviewChart({ labels, data }: DonutChartProps) {
 	const defaultColors = ["#2563EB", "#22C55E", "#F59E0B", "#8B5CF6", "#EF4444"];
 
 	const colorsForData = defaultColors
@@ -47,8 +47,8 @@ export default function DonutChart({ labels, data }: DonutChartProps) {
 	};
 
 	return (
-		<div className="w-full max-w-sm mx-auto p-1.5 flex md:flex-col items-center">
-			<div className="w-[50%] md:w-full h-30 sm:h-55 md:h-65 lg:h-80">
+		<div className="w-full max-w-sm mx-auto p-1.5 flex items-center lg:gap-3.5">
+			<div className="w-[50%] h-30 sm:h-55 md:h-65 lg:h-80">
 				<Doughnut data={chartData} options={options} />
 			</div>
 

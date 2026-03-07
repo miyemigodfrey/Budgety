@@ -10,7 +10,7 @@ import { Link, useLocation } from "react-router-dom";
 
 const menus = [
 	{ id: 1, url: "/", icon: House, label: "Home" },
-	{ id: 2, url: "/sources", icon: Printer, label: "Sources" },
+	{ id: 2, url: "/source", icon: Printer, label: "Sources" },
 	{
 		id: 3,
 		url: "/transaction",
