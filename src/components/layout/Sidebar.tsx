@@ -1,12 +1,24 @@
 import Budgety from "@/assets/budgety.png";
-import { FileText, House, Printer, Settings } from "lucide-react";
+import {
+	ArrowLeftRight,
+	FileText,
+	House,
+	Printer,
+	Settings,
+} from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 const menus = [
 	{ id: 1, url: "/", icon: House, label: "Home" },
 	{ id: 2, url: "/sources", icon: Printer, label: "Sources" },
-	{ id: 3, url: "/report", icon: FileText, label: "Report" },
-	{ id: 4, url: "/settings", icon: Settings, label: "Settings" },
+	{
+		id: 3,
+		url: "/transaction",
+		icon: ArrowLeftRight,
+		label: "transaction",
+	},
+	{ id: 4, url: "/report", icon: FileText, label: "Report" },
+	{ id: 5, url: "/settings", icon: Settings, label: "Settings" },
 ];
 
 export default function Sidebar() {

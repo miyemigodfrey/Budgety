@@ -1,51 +1,124 @@
-import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FileText, House, Plus, Printer, Settings } from "lucide-react";
+import AddSourceModal from "@/features/addsource/sourceModal";
 import budgetydash from "@/assets/budgety-dashboard.png";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
+import { useState } from "react";
+
+const invoices = [
+	{
+		id: 1,
+		icon: House,
+		sourceName: "Opay",
+		dateAdded: "25-02-2000",
+		PaymentAmount: "£40,000",
+	},
+	{
+		id: 2,
+		icon: FileText,
+		sourceName: "Access",
+		dateAdded: "25-02-2000",
+		PaymentAmount: "£30,000",
+	},
+	{
+		id: 3,
+		icon: Printer,
+		sourceName: "Zenith",
+		dateAdded: "25-02-2000",
+		PaymentAmount: "£8,000",
+	},
+];
+
+export function TableDemo() {
+	return (
+		<>
+			<Table>
+				<TableBody>
+					{invoices.map((invoice) => {
+						const Icon = invoice.icon;
+						return (
+							<TableRow key={invoice.id}>
+								<TableCell className="font-semibold flex items-center gap-x-1.5">
+									<Icon size={16} className="text-green-700" />
+
+									{invoice.sourceName}
+								</TableCell>
+								<TableCell className="text-gray-500 text-xs">
+									{invoice.dateAdded}
+								</TableCell>
+								<TableCell className="text-right font-semibold">
+									{invoice.PaymentAmount}
+								</TableCell>
+							</TableRow>
+						);
+					})}
+				</TableBody>
+			</Table>
+		</>
+	);
+}
 
 function Dashboard() {
-	// Dummy criteria: flip to true to hide the image and show alternative content
-	const criteriaMet = false;
+	const criteriaMet = true;
+	const [open, setOpen] = useState(false);
 
 	return (
 		<div className="min-h-screen w-full flex flex-col items-center py-6 px-4">
-			<header className="relative w-full max-w-4xl">
-				<div className="relative flex items-center p-2">
-					<h1 className="font-bold text-2xl text-center absolute left-1/2 transform -translate-x-1/2 md:relative md:transform-none md:left-0">
-						Budgety
-					</h1>
-					<Settings className="text-gray-500 size-6 absolute right-4 md:relative md:ml-2" />
+			{/* HEADER */}
+			<header className="w-full max-w-5xl">
+				<div className="flex items-center justify-between p-2">
+					<h1 className="font-bold text-2xl">Budgety</h1>
+					<Settings className="text-gray-500 size-6" />
 				</div>
 			</header>
 
-			<div className="flex-1 w-full max-w-4xl flex flex-col items-center justify-center">
-				{!criteriaMet && (
+			<div className="flex-1 w-full max-w-5xl flex flex-col items-center mt-6">
+				{/* IMAGE + SETUP SECTION */}
+				<div className="w-full flex flex-col lg:flex-row gap-8 items-center lg:items-start">
+					{/* IMAGE */}
+
 					<img
 						src={budgetydash}
 						alt="Dashboard illustration"
-						className="w-full md:w-[70%] lg:w-[60%] drop-shadow-2xl rounded-xl border-4 border-gray-100 contrast-125 saturate-125"
+						className="w-full md:w-[90%] lg:w-[45%] drop-shadow-2xl rounded-xl border border-gray-100 contrast-125 saturate-125"
 					/>
-				)}
 
-				{criteriaMet && (
-					<div className="w-full md:w-[80%] p-6 bg-white rounded-xl shadow-md text-center">
-						<h3 className="font-semibold">Alternate view</h3>
-						<p className="text-sm text-gray-600">
-							Criteria met — image hidden and this content shown instead.
-						</p>
+					{/* SETUP CARD */}
+					<div className="w-full md:w-full p-5 bg-white md:bg-inherit rounded-3xl shadow-2xl md:shadow-none flex flex-col items-center gap-y-3 text-center">
+						<div className="space-y-2">
+							<h2 className="text-2xl md:text-[34px] lg:text-[50px] font-semibold">
+								Set Up your Budget Workspace
+							</h2>
+							<span className="text-gray-500 md:text-xl">
+								A smart way to manage your budget with budgety
+							</span>
+						</div>
+						<Button
+							className="w-full bg-blue-800"
+							onClick={() => setOpen(true)}>
+							Start Setup
+						</Button>
 					</div>
-				)}
-
-				<div className="mt-6 p-5 bg-white rounded-3xl shadow-2xl flex flex-col items-center gap-y-3 w-full md:w-[60%] lg:w-[45%]">
-					<div className="flex flex-col items-center space-y-2 text-center">
-						<h2 className="text-2xl font-semibold">
-							Set Up your Budget Workspace
-						</h2>
-						<span>A smart way to manage your budget with budgety</span>
-					</div>
-					<Button variant="primary" className="w-[85%]">
-						Start Setup
-					</Button>
 				</div>
+
+				{/* TABLE BELOW */}
+				{criteriaMet && (
+					<div className="mt-8 w-full p-6 bg-white rounded-xl shadow-md">
+						<h3 className="font-semibold md:text-3xl mb-3">
+							Set Up Your Sources
+						</h3>
+						<TableDemo />
+						<div className="w-full mt-4">
+							<Button className="w-full bg-blue-800 md:py-3">
+								<Plus size={26} className="text-white" />
+								<span className="md:hidden">Add Another Source</span>
+								<span className="hidden md:block">Continue to Dashboard</span>
+							</Button>
+						</div>
+					</div>
+				)}
+
+				<AddSourceModal open={open} setOpen={setOpen} />
 			</div>
 		</div>
 	);
