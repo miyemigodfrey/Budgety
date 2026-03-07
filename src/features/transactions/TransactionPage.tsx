@@ -25,42 +25,53 @@ function TransactionPage() {
 					<h2 className="p-4 font-semibold text-gray-700">
 						Recent Transactions
 					</h2>
-					
+
 					<ul className="px-4">
-						<li className="py-2 border-b flex items-center justify-between border-gray-200">
+						<li className="pb-4 pt-2 border-b flex items-start justify-between border-gray-200">
 							<Wallet className="text-green-700" />
-							<div>
+							<div className="space-y-1">
 								<p className="font-semibold">Salary</p>
 								<p className="text-xs md:text-sm text-gray-500">
 									Added on 1st Jan 2024
 								</p>
+								<span className="font-semibold text-sm text-gray-600 bg-gray-300 shadow-2xl px-3 py-1 rounded-2xl border-gray-400">
+									Opay
+								</span>
 							</div>
 							<p className="text-green-700 font-semibold">+£8,000</p>
 						</li>
-						<li className="py-2 border-b flex items-center justify-between border-gray-200">
+
+						<li className="pb-4 pt-2 border-b flex items-center justify-between border-gray-200">
 							<Wallet className="text-red-700" />
-							<div>
+							<div className="space-y-1">
 								<p className="font-semibold">Grocery Shopping</p>
 								<p className="text-xs md:text-sm text-gray-500">
-									Added on 2nd Jan 2024
+									Deducted on 2nd Jan 2024
 								</p>
+								<span className="font-semibold text-sm text-gray-600 bg-gray-300 shadow-2xl px-3 py-1 rounded-2xl border-gray-400">
+									Access
+								</span>
 							</div>
 							<p className="text-red-700 font-semibold">-£200</p>
 						</li>
-						<li className="py-2 flex items-center justify-between">
+
+						<li className="pb-4 pt-2 flex items-center justify-between">
 							<Wallet className="text-green-700" />
-							<div>
+							<div className="space-y-1">
 								<p className="font-semibold">Freelance Work</p>
 								<p className="text-xs md:text-sm text-gray-500">
 									Added on 3rd Jan 2024
 								</p>
+								<span className="font-semibold text-sm text-gray-600 bg-gray-300 shadow-2xl px-3 py-1 rounded-2xl border-gray-400">
+									Cash
+								</span>
 							</div>
 							<p className="text-green-700 font-semibold">+£1,500</p>
 						</li>
 					</ul>
 				</div>
 
-				<div className="flex items-center justify-between mt-8 w-full">
+				<div className="flex items-center justify-between mt-4 w-full">
 					<Button variant="primary">
 						<Edit size={16} className="text-gray-50" />
 						<span className="text-gray-50">Edit Source</span>

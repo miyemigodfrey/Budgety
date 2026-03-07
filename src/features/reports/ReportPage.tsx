@@ -36,7 +36,9 @@ export default function ReportPage() {
 					</li>
 				</ul>
 			</div>
-			<div className="mt-8 w-full bg-white rounded-xl shadow-md p-2">
+
+			<div className="mt-8 w-full bg-white rounded-xl shadow-md ">
+				<p className="text-bold text-xl">Monthly Summary</p>
 				<DonutChart labels={labels} data={data} />
 			</div>
 		</div>

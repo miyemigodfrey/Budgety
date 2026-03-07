@@ -8,7 +8,7 @@ export default function AppContainer({
 	children: React.ReactNode;
 }) {
 	return (
-		<div className="min-h-screen flex bg-gray-50">
+		<div className="min-h-screen flex bg-gray-100">
 			<aside className="hidden md:flex md:w-56 lg:w-64 bg-white border-r border-gray-200 p-4 fixed top-0 left-0 bottom-0 z-20">
 				<Sidebar />
 			</aside>

@@ -29,7 +29,7 @@ export default function DonutChart({ labels, data }: DonutChartProps) {
 			{
 				data,
 				backgroundColor: colorsForData,
-				borderWidth: 2,
+				borderWidth: 1,
 				borderColor: "#ffffff",
 			},
 		],
@@ -43,36 +43,22 @@ export default function DonutChart({ labels, data }: DonutChartProps) {
 			legend: {
 				display: false,
 			},
-			datalabels: {
-				color: "#374151",
-				anchor: "end",
-				align: "end",
-				offset: 8,
-				font: {
-					size: 12,
-					weight: "bold",
-				},
-				formatter: (value: number, context: any) => {
-					const label = context.chart.data.labels[context.dataIndex];
-					return `${label}: ₦${value}`;
-				},
-			},
 		},
 	};
 
 	return (
-		<div className="w-full max-w-sm mx-auto">
-			<div style={{ height: 240 }}>
+		<div className="w-full max-w-sm mx-auto p-1.5 flex md:flex-col items-center">
+			<div className="w-[50%] md:w-full h-30 sm:h-55 md:h-65 lg:h-80">
 				<Doughnut data={chartData} options={options} />
 			</div>
 
 			<ul className="mt-4 space-y-2">
 				{labels.map((label, idx) => (
 					<li key={label} className="flex items-center justify-between gap-3">
-						<div className="flex items-center gap-3">
+						<div className="flex items-center gap-1 md:gap-3">
 							<span
 								style={{ background: colorsForData[idx] }}
-								className="w-4 h-4 rounded-sm inline-block"
+								className="w-2 h-2 rounded-sm inline-block"
 							/>
 							<span className="text-sm text-gray-700">{label}</span>
 						</div>
