@@ -95,9 +95,9 @@ export default function SourcePage() {
 
 				{!criteriaMet && (
 					<div className="mt-2.5 w-full bg-white rounded-xl shadow-md p-3 border border-gray-200">
-						<Tabs defaultValue="account" className="w-100">
+						<Tabs defaultValue="inflow" className="w-100">
 							<TabsList>
-								<TabsTrigger value="inflow" >Inflow</TabsTrigger>
+								<TabsTrigger value="inflow">Inflow</TabsTrigger>
 								<TabsTrigger value="outflow">Outflow</TabsTrigger>
 								<TabsTrigger value="transfer">Transfer</TabsTrigger>
 							</TabsList>

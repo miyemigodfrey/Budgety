@@ -18,7 +18,7 @@ const menus = [
 		label: "transaction",
 	},
 	{ id: 4, url: "/report", icon: FileText, label: "Report" },
-	{ id: 5, url: "/settings", icon: Settings, label: "Settings" },
+	{ id: 5, url: "/setting", icon: Settings, label: "Settings" },
 ];
 
 export default function Sidebar() {

@@ -4,6 +4,7 @@ import AddSourceModal from "@/features/addsource/sourceModal";
 import budgetydash from "@/assets/budgety-dashboard.png";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { useState } from "react";
+import AddTransactionModal from "../transactions/transactionModal";
 
 const invoices = [
 	{
@@ -61,6 +62,7 @@ export function TableDemo() {
 function Dashboard() {
 	const criteriaMet = true;
 	const [open, setOpen] = useState(false);
+	const [transactionOpen, setTransactionOpen] = useState(false);
 
 	return (
 		<div className="min-h-screen w-full flex flex-col items-center py-6 px-4">
@@ -109,9 +111,11 @@ function Dashboard() {
 						</h3>
 						<TableDemo />
 						<div className="w-full mt-4">
-							<Button className="w-full bg-blue-800 md:py-3">
+							<Button
+								onClick={() => setTransactionOpen(true)}
+								className="w-full bg-blue-800 md:py-3">
 								<Plus size={26} className="text-white" />
-								<span className="md:hidden">Add Another Source</span>
+								<span className="md:hidden">Add Transaction</span>
 								<span className="hidden md:block">Continue to Dashboard</span>
 							</Button>
 						</div>
@@ -119,6 +123,10 @@ function Dashboard() {
 				)}
 
 				<AddSourceModal open={open} setOpen={setOpen} />
+				<AddTransactionModal
+					open={transactionOpen}
+					setOpen={setTransactionOpen}
+				/>
 			</div>
 		</div>
 	);

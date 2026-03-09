@@ -4,6 +4,7 @@ import Dashboard from "./features/dashboard/DashboardPage";
 import SourcePage from "./features/addsource/SourcePage";
 import ReportPage from "./features/reports/ReportPage";
 import AppContainer from "@/components/layout/AppContainer";
+import SettingPage from "./features/settingPage/settings";
 
 const App = () => {
 	return (
@@ -14,6 +15,7 @@ const App = () => {
 					<Route path="/source" element={<SourcePage />} />
 					<Route path="/transaction" element={<TransactionPage />} />
 					<Route path="/report" element={<ReportPage />} />
+					<Route path="/setting" element={<SettingPage />} />
 				</Routes>
 			</AppContainer>
 		</BrowserRouter>
