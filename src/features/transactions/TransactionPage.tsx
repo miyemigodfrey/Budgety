@@ -2,7 +2,7 @@ import { Edit, Settings, User, Wallet } from "lucide-react";
 import { TableDemo } from "../dashboard/DashboardPage";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { TransactionBarChart } from "@/components/charts/TransactionChart";
+import { TotalTransactionBarChart } from "@/components/charts/TransactionChart";
 
 function TransactionPage() {
 	const navigate = useNavigate();
@@ -12,7 +12,7 @@ function TransactionPage() {
 			<div className="min-h-screen w-full flex flex-col items-center py-6 px-4">
 				<header className="w-full max-w-5xl">
 					<div className="flex items-center justify-between p-2">
-						<h1 className="font-bold text-2xl">Budgety</h1>
+						<h1 className="font-bold text-2xl">Transaction</h1>
 						<Settings className="text-gray-500 size-6" />
 					</div>
 				</header>
@@ -158,10 +158,8 @@ function TransactionPage() {
 					</div>
 
 					{/* RIGHT SECTION */}
-					<div className="hidden md:block lg:col-span-3 w-full">
-						<div className="bg-white rounded-xl shadow-md p-4 h-full">
-							<TransactionBarChart />
-						</div>
+					<div className="hidden md:block lg:col-span-3 w-full h-full">
+						<TotalTransactionBarChart />
 					</div>
 				</div>
 			</div>

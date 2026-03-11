@@ -10,7 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const menus = [
 	{ id: 1, url: "/", icon: House, label: "Home" },
-	{ id: 2, url: "/source", icon: Printer, label: "Sources" },
+	{ id: 2, url: "/source/id", icon: Printer, label: "Sources" },
 	{
 		id: 3,
 		url: "/transaction",

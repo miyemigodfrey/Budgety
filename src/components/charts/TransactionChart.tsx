@@ -9,6 +9,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+
 import {
 	ChartContainer,
 	ChartTooltip,
@@ -16,47 +17,109 @@ import {
 	type ChartConfig,
 } from "@/components/ui/chart";
 
-export const description = "A bar chart";
-
 const chartData = [
-	{ month: "January", desktop: 186 },
-	{ month: "February", desktop: 305 },
-	{ month: "March", desktop: 237 },
-	{ month: "April", desktop: 73 },
-	{ month: "May", desktop: 209 },
-	{ month: "June", desktop: 214 },
+	{ month: "January", opay: 200, access: 180, cash: 100 },
+	{ month: "February", opay: 260, access: 210, cash: 150 },
+	{ month: "March", opay: 230, access: 200, cash: 100 },
+	{ month: "April", opay: 150, access: 160, cash: 80 },
+	{ month: "May", opay: 310, access: 240, cash: 150 },
+	{ month: "June", opay: 280, access: 230, cash: 130 },
 ];
 
-const chartConfig = {
-	desktop: {
-		label: "Desktop",
+/* ---------------- TOTAL TRANSACTIONS ---------------- */
+
+const totalChartConfig = {
+	total: {
+		label: "Total",
 		color: "var(--chart-1)",
 	},
 } satisfies ChartConfig;
 
-export function TransactionBarChart() {
+export function TotalTransactionBarChart() {
+	const totalData = chartData.map((item) => ({
+		month: item.month,
+		total: item.opay + item.access + item.cash,
+	}));
+
 	return (
-		<Card>
+		<Card className="border border-gray-200 drop-shadow-xl">
 			<CardHeader>
-				<CardTitle>Transactions Chart </CardTitle>
+				<CardTitle>Total Transactions</CardTitle>
 				<CardDescription>January - June 2024</CardDescription>
 			</CardHeader>
+
 			<CardContent>
-				<ChartContainer config={chartConfig}>
-					<BarChart accessibilityLayer data={chartData}>
+				<ChartContainer config={totalChartConfig}>
+					<BarChart data={totalData}>
 						<CartesianGrid vertical={false} />
+
 						<XAxis
 							dataKey="month"
 							tickLine={false}
-							tickMargin={10}
 							axisLine={false}
-							tickFormatter={(value) => value.slice(0, 3)}
+							tickMargin={10}
+							tickFormatter={(v) => v.slice(0, 3)}
 						/>
+
 						<ChartTooltip
 							cursor={false}
 							content={<ChartTooltipContent hideLabel />}
 						/>
-						<Bar dataKey="desktop" fill="var(--color-desktop)" radius={8} />
+
+						<Bar dataKey="total" fill="var(--color-total)" radius={8} />
+					</BarChart>
+				</ChartContainer>
+			</CardContent>
+		</Card>
+	);
+}
+
+/* ---------------- BREAKDOWN TRANSACTIONS ---------------- */
+
+const breakdownChartConfig = {
+	opay: {
+		label: "Opay",
+		color: "var(--chart-1)",
+	},
+	access: {
+		label: "Access",
+		color: "var(--chart-2)",
+	},
+	cash: {
+		label: "Cash",
+		color: "var(--chart-3)",
+	},
+} satisfies ChartConfig;
+
+export function TransactionBreakdownChart() {
+	return (
+		<Card className="border border-gray-200 drop-shadow-xl">
+			<CardHeader>
+				<CardTitle>Transaction Breakdown</CardTitle>
+				<CardDescription>Opay • Access • Cash</CardDescription>
+			</CardHeader>
+
+			<CardContent>
+				<ChartContainer config={breakdownChartConfig}>
+					<BarChart data={chartData}>
+						<CartesianGrid vertical={false} />
+
+						<XAxis
+							dataKey="month"
+							tickLine={false}
+							axisLine={false}
+							tickMargin={10}
+							tickFormatter={(v) => v.slice(0, 3)}
+						/>
+
+						<ChartTooltip
+							cursor={false}
+							content={<ChartTooltipContent indicator="dashed" />}
+						/>
+
+						<Bar dataKey="opay" fill="var(--color-opay)" radius={4} />
+						<Bar dataKey="access" fill="var(--color-access)" radius={4} />
+						<Bar dataKey="cash" fill="var(--color-cash)" radius={4} />
 					</BarChart>
 				</ChartContainer>
 			</CardContent>
