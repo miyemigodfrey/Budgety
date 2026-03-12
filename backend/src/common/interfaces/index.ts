@@ -1,5 +1,7 @@
-export { IUser } from './user.interface';
-export { ISource } from './source.interface';
-export { ITransaction, TransactionType } from './transaction.interface';
-export { ICategory, CategoryType } from './category.interface';
-export { IReconciliation } from './reconciliation.interface';
+export type { IUser } from './user.interface';
+export type { ISource } from './source.interface';
+export type { ITransaction } from './transaction.interface';
+export { TransactionType } from './transaction.interface';
+export type { ICategory } from './category.interface';
+export { CategoryType } from './category.interface';
+export type { IReconciliation } from './reconciliation.interface';

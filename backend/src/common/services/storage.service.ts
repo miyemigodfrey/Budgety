@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { IUser } from '../interfaces/user.interface';
 import { ISource } from '../interfaces/source.interface';
-import { ITransaction } from '../interfaces/transaction.interface';
+import type { ITransaction } from '../interfaces/transaction.interface';
 import { ICategory } from '../interfaces/category.interface';
 import { IReconciliation } from '../interfaces/reconciliation.interface';
 
