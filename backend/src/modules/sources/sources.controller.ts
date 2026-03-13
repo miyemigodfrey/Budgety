@@ -1,51 +1,45 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/auth.guard';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { SourcesService } from './sources.service';
-import { CreateSourceDto } from './dto/create-source.dto';
-import { UpdateSourceDto } from './dto/update-source.dto';
+	Body,
+	Controller,
+	Delete,
+	Get,
+	Param,
+	Patch,
+	Post,
+} from "@nestjs/common";
+import { SourcesService } from "./sources.service";
+import { CreateSourceDto } from "./dto/create-source.dto";
+import { UpdateSourceDto } from "./dto/update-source.dto";
 
-@Controller('sources')
-@UseGuards(JwtAuthGuard)
+@Controller("sources")
 export class SourcesController {
-  constructor(private readonly sourcesService: SourcesService) {}
+	constructor(private readonly sourcesService: SourcesService) {}
 
-  @Get()
-  findAll(@CurrentUser() user: { id: string }) {
-    return this.sourcesService.findAll(user.id);
-  }
+	private userId = "demo-user";
 
-  @Get(':id')
-  findOne(@Param('id') id: string, @CurrentUser() user: { id: string }) {
-    return this.sourcesService.findOne(id, user.id);
-  }
+	@Get()
+	findAll() {
+		return this.sourcesService.findAll(this.userId);
+	}
 
-  @Post()
-  create(@Body() dto: CreateSourceDto, @CurrentUser() user: { id: string }) {
-    return this.sourcesService.create(dto, user.id);
-  }
+	@Get(":id")
+	findOne(@Param("id") id: string) {
+		return this.sourcesService.findOne(id, this.userId);
+	}
 
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() dto: UpdateSourceDto,
-    @CurrentUser() user: { id: string },
-  ) {
-    return this.sourcesService.update(id, dto, user.id);
-  }
+	@Post()
+	create(@Body() dto: CreateSourceDto) {
+		return this.sourcesService.create(dto, this.userId);
+	}
 
-  @Delete(':id')
-  delete(@Param('id') id: string, @CurrentUser() user: { id: string }) {
-    this.sourcesService.delete(id, user.id);
-    return { message: 'Source deleted' };
-  }
+	@Patch(":id")
+	update(@Param("id") id: string, @Body() dto: UpdateSourceDto) {
+		return this.sourcesService.update(id, dto, this.userId);
+	}
+
+	@Delete(":id")
+	delete(@Param("id") id: string) {
+		this.sourcesService.delete(id, this.userId);
+		return { message: "Source deleted" };
+	}
 }

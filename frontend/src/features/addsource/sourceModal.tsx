@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import UniversalModal from "@/components/ui/modal";
+import { useState } from "react";
+import { createSource } from "@/api/sources";
 
 type Props = {
 	open: boolean;
@@ -8,6 +10,18 @@ type Props = {
 };
 
 export default function AddSourceModal({ open, setOpen }: Props) {
+	const [name, setName] = useState("");
+	const [balance, setBalance] = useState("");
+
+	const handleSubmit = async () => {
+		try {
+			await createSource({ name, balance: Number(balance) });
+			alert("Source created!");
+		} catch (error) {
+			console.error("Failed to create source:", error);
+		}
+	};
+
 	return (
 		<UniversalModal
 			open={open}
@@ -16,10 +30,12 @@ export default function AddSourceModal({ open, setOpen }: Props) {
 			description="Fill in the details to create a new source."
 			footer={
 				<div className="w-full flex flex-col gap-3">
-					<Button className="bg-green-700/70">Save Source</Button>
+					<Button className="bg-green-700/70" onClick={handleSubmit}>
+						Save Source
+					</Button>
 
 					<Button variant="ghost" onClick={() => setOpen(false)}>
-						Maybe Later 
+						Maybe Later
 					</Button>
 				</div>
 			}>
@@ -29,7 +45,8 @@ export default function AddSourceModal({ open, setOpen }: Props) {
 						Source Name
 					</label>
 					<Input
-						id="name"
+						value={name}
+						onChange={(e) => setName(e.target.value)}
 						placeholder="eg. Salary, Bank, Cash"
 						className="placeholder:text-sm"
 					/>
@@ -42,7 +59,8 @@ export default function AddSourceModal({ open, setOpen }: Props) {
 						Opening Balance
 					</label>
 					<Input
-						id="balance"
+						value={balance}
+						onChange={(e) => setBalance(e.target.value)}
 						type="number"
 						placeholder="£ 0.00"
 						className="placeholder:text-gray-900 placeholder:font-semibold"
