@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { StorageService } from '../../common/services/storage.service';
-import { TransactionType } from '../../common/interfaces';
+import { ITransaction, TransactionType } from '../../common/interfaces';
 
 @Injectable()
 export class DashboardService {
@@ -16,9 +16,16 @@ export class DashboardService {
       name: s.name,
       balance: s.balance,
       currency: s.currency,
+      openingBalance: this.computeOpeningBalance(s.id, s.balance, transactions),
+      createdAt: s.createdAt,
+      updatedAt: s.updatedAt,
     }));
 
     const totalBalance = sources.reduce((sum, s) => sum + s.balance, 0);
+    const totalInitialBalance = sourcesSummary.reduce(
+      (sum, source) => sum + source.openingBalance,
+      0,
+    );
 
     // Monthly inflow / outflow (current month)
     const now = new Date();
@@ -61,7 +68,18 @@ export class DashboardService {
 
     return {
       totalBalance,
+      totalInitialBalance,
       sources: sourcesSummary,
+      setup: {
+        hasSources: sources.length > 0,
+        hasTransactions: transactions.length > 0,
+        nextAction:
+          sources.length === 0
+            ? 'add-source'
+            : transactions.length === 0
+              ? 'add-transaction'
+              : 'view-dashboard',
+      },
       monthly: {
         period: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
         inflow: monthlyInflow,
@@ -70,5 +88,41 @@ export class DashboardService {
       },
       recentTransactions,
     };
+  }
+
+  private computeOpeningBalance(
+    sourceId: string,
+    currentBalance: number,
+    transactions: ITransaction[],
+  ) {
+    const related = transactions.filter(
+      (tx) => tx.sourceId === sourceId || tx.transferTargetId === sourceId,
+    );
+
+    const inflow = related
+      .filter(
+        (tx) => tx.type === TransactionType.INFLOW && tx.sourceId === sourceId,
+      )
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    const outflow = related
+      .filter(
+        (tx) => tx.type === TransactionType.OUTFLOW && tx.sourceId === sourceId,
+      )
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    const transferOut = related
+      .filter(
+        (tx) =>
+          tx.type === TransactionType.TRANSFER && tx.sourceId === sourceId,
+      )
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    const transferIn = related
+      .filter(
+        (tx) =>
+          tx.type === TransactionType.TRANSFER &&
+          tx.transferTargetId === sourceId,
+      )
+      .reduce((sum, tx) => sum + tx.amount, 0);
+
+    return currentBalance - inflow + outflow + transferOut - transferIn;
   }
 }

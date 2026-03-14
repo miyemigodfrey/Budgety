@@ -4,6 +4,7 @@ import { ISource } from '../interfaces/source.interface';
 import type { ITransaction } from '../interfaces/transaction.interface';
 import { ICategory } from '../interfaces/category.interface';
 import { IReconciliation } from '../interfaces/reconciliation.interface';
+import { IUserSettings } from '../interfaces/settings.interface';
 
 /**
  * In-memory storage service. Replace this with database repositories
@@ -17,6 +18,7 @@ export class StorageService {
   private transactions: ITransaction[] = [];
   private categories: ICategory[] = [];
   private reconciliations: IReconciliation[] = [];
+  private settings: IUserSettings[] = [];
 
   // ── Users ──────────────────────────────────────────────────────────
 
@@ -171,5 +173,33 @@ export class StorageService {
       this.reconciliations.push(record);
     }
     return record;
+  }
+
+  // ── Settings ──────────────────────────────────────────────────────
+
+  getUserSettings(userId: string): IUserSettings {
+    const existing = this.settings.find((entry) => entry.userId === userId);
+    if (existing) return existing;
+
+    const defaults: IUserSettings = {
+      userId,
+      dailyReminder: false,
+      appLockEnabled: false,
+      darkMode: false,
+      backupEnabled: false,
+      updatedAt: new Date(),
+    };
+
+    this.settings.push(defaults);
+    return defaults;
+  }
+
+  updateUserSettings(
+    userId: string,
+    updates: Partial<Omit<IUserSettings, 'userId' | 'updatedAt'>>,
+  ): IUserSettings {
+    const settings = this.getUserSettings(userId);
+    Object.assign(settings, updates, { updatedAt: new Date() });
+    return settings;
   }
 }

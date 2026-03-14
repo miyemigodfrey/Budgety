@@ -71,6 +71,11 @@ bun run start:prod
 
 The API will be available at **http://localhost:3000**.
 
+Swagger API docs will be available at:
+
+- **UI:** http://localhost:3000/api/docs
+- **OpenAPI JSON:** http://localhost:3000/api/docs-json
+
 > **Note:** The backend uses an in-memory data store. All data is lost when the server restarts. This is by design — the `StorageService` can be swapped out for a real database (TypeORM, Prisma, etc.) without changing any other code.
 
 ### 3. Frontend Setup
@@ -158,6 +163,10 @@ Budgety/
 ```
 
 ## API Endpoints
+
+For interactive API exploration and request/response schemas, use Swagger at:
+
+- http://localhost:3000/api/docs
 
 All endpoints except auth require a `Authorization: Bearer <token>` header.
 

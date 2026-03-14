@@ -23,6 +23,18 @@ bun run start:prod
 
 The API starts at **http://localhost:3000** by default.
 
+## Swagger / OpenAPI
+
+Swagger is implemented in the app bootstrap and is available when the server is running.
+
+- **Swagger UI:** http://localhost:3000/api/docs
+- **OpenAPI JSON:** http://localhost:3000/api/docs-json
+
+Use Swagger UI to:
+- Inspect all routes, DTO schemas, and auth requirements
+- Try endpoints directly in the browser
+- Authorize once with `Bearer <token>` after login/register for protected endpoints
+
 ## Scripts
 
 | Script | Command | Description |
@@ -107,6 +119,8 @@ A global `ValidationPipe` is configured with:
 - `transform: true` — auto-transforms payloads to DTO class instances
 
 ## API Overview
+
+Interactive docs: http://localhost:3000/api/docs
 
 All authenticated endpoints require the header: `Authorization: Bearer <token>`
 

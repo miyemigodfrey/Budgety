@@ -9,6 +9,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ReconciliationModule } from './modules/reconciliation/reconciliation.module';
 import { ExportModule } from './modules/export/export.module';
+import { SettingsModule } from './modules/settings/settings.module';
 
 @Global()
 @Module({
@@ -21,6 +22,7 @@ import { ExportModule } from './modules/export/export.module';
     DashboardModule,
     ReconciliationModule,
     ExportModule,
+    SettingsModule,
   ],
   providers: [StorageService, SeedService],
   exports: [StorageService],

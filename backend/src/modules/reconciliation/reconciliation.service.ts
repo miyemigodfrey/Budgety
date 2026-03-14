@@ -55,4 +55,65 @@ export class ReconciliationService {
       };
     });
   }
+
+  getSourceSummary(sourceId: string, userId: string) {
+    const source = this.storage.findSourceById(sourceId, userId);
+    if (!source) throw new NotFoundException('Source not found');
+
+    const latestRecord = this.storage
+      .findReconciliationsByUserId(userId)
+      .filter((record) => record.sourceId === sourceId)
+      .sort(
+        (a, b) =>
+          new Date(b.reconciledAt).getTime() -
+          new Date(a.reconciledAt).getTime(),
+      )[0];
+
+    const openingBalance = this.computeOpeningBalance(
+      sourceId,
+      userId,
+      source.balance,
+    );
+
+    return {
+      sourceId: source.id,
+      sourceName: source.name,
+      openingBalance,
+      appBalance: source.balance,
+      actualBalance: latestRecord?.actualBalance,
+      discrepancy: latestRecord
+        ? latestRecord.actualBalance - source.balance
+        : undefined,
+      lastReconciledAt: latestRecord?.reconciledAt,
+    };
+  }
+
+  private computeOpeningBalance(
+    sourceId: string,
+    userId: string,
+    currentBalance: number,
+  ) {
+    const transactions = this.storage
+      .findTransactionsByUserId(userId)
+      .filter((tx) => {
+        return tx.sourceId === sourceId || tx.transferTargetId === sourceId;
+      });
+
+    const inflow = transactions
+      .filter((tx) => tx.type === 'inflow' && tx.sourceId === sourceId)
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    const outflow = transactions
+      .filter((tx) => tx.type === 'outflow' && tx.sourceId === sourceId)
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    const transferOut = transactions
+      .filter((tx) => tx.type === 'transfer' && tx.sourceId === sourceId)
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    const transferIn = transactions
+      .filter(
+        (tx) => tx.type === 'transfer' && tx.transferTargetId === sourceId,
+      )
+      .reduce((sum, tx) => sum + tx.amount, 0);
+
+    return currentBalance - inflow + outflow + transferOut - transferIn;
+  }
 }

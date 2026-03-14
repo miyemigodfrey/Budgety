@@ -29,6 +29,11 @@ export class SeedService implements OnModuleInit {
     const userId = crypto.randomUUID();
     const now = new Date();
 
+    /* 
+      email: 'demo@budgety.com',
+      password: password123
+     */
+
     // ── Demo User ────────────────────────────────────────────────────
     const hashedPassword = await bcrypt.hash('password123', 10);
     this.storage.createUser({

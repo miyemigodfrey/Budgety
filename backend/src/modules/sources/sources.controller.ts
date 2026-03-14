@@ -1,45 +1,133 @@
 import {
-	Body,
-	Controller,
-	Delete,
-	Get,
-	Param,
-	Patch,
-	Post,
-} from "@nestjs/common";
-import { SourcesService } from "./sources.service";
-import { CreateSourceDto } from "./dto/create-source.dto";
-import { UpdateSourceDto } from "./dto/update-source.dto";
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+} from '@nestjs/swagger';
+import { SourcesService } from './sources.service';
+import { CreateSourceDto } from './dto/create-source.dto';
+import { UpdateSourceDto } from './dto/update-source.dto';
+import {
+  SourceResponseDto,
+  SourceDetailResponseDto,
+  MessageResponseDto,
+} from '../../common/dto/responses';
+import { JwtAuthGuard } from '../auth/auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
-@Controller("sources")
+@ApiTags('Sources')
+@ApiBearerAuth('JWT-auth')
+@Controller('sources')
+@UseGuards(JwtAuthGuard)
 export class SourcesController {
-	constructor(private readonly sourcesService: SourcesService) {}
+  constructor(private readonly sourcesService: SourcesService) {}
 
-	private userId = "demo-user";
+  @Get()
+  @ApiOperation({ summary: 'List all sources' })
+  @ApiResponse({
+    status: 200,
+    description: 'Sources list',
+    type: [SourceResponseDto],
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  findAll(@CurrentUser() user: { id: string }) {
+    return this.sourcesService.findAll(user.id);
+  }
 
-	@Get()
-	findAll() {
-		return this.sourcesService.findAll(this.userId);
-	}
+  @Get('overview')
+  @ApiOperation({ summary: 'Get sources page overview data' })
+  @ApiResponse({
+    status: 200,
+    description: 'Source cards and totals',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  findOverview(@CurrentUser() user: { id: string }) {
+    return this.sourcesService.findOverview(user.id);
+  }
 
-	@Get(":id")
-	findOne(@Param("id") id: string) {
-		return this.sourcesService.findOne(id, this.userId);
-	}
+  @Get(':id')
+  @ApiOperation({ summary: 'Get source by ID with transaction history' })
+  @ApiParam({ name: 'id', description: 'Source UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Source details with transactions',
+    type: SourceDetailResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Source not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  findOne(@Param('id') id: string, @CurrentUser() user: { id: string }) {
+    return this.sourcesService.findOne(id, user.id);
+  }
 
-	@Post()
-	create(@Body() dto: CreateSourceDto) {
-		return this.sourcesService.create(dto, this.userId);
-	}
+  @Get(':id/overview')
+  @ApiOperation({ summary: 'Get source detail page overview data' })
+  @ApiParam({ name: 'id', description: 'Source UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Source detail summary, monthly stats and recent transactions',
+  })
+  @ApiResponse({ status: 404, description: 'Source not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  findOverviewById(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.sourcesService.findOverviewById(id, user.id);
+  }
 
-	@Patch(":id")
-	update(@Param("id") id: string, @Body() dto: UpdateSourceDto) {
-		return this.sourcesService.update(id, dto, this.userId);
-	}
+  @Post()
+  @ApiOperation({ summary: 'Create a new source' })
+  @ApiResponse({
+    status: 201,
+    description: 'Source created',
+    type: SourceResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  create(@Body() dto: CreateSourceDto, @CurrentUser() user: { id: string }) {
+    return this.sourcesService.create(dto, user.id);
+  }
 
-	@Delete(":id")
-	delete(@Param("id") id: string) {
-		this.sourcesService.delete(id, this.userId);
-		return { message: "Source deleted" };
-	}
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update a source' })
+  @ApiParam({ name: 'id', description: 'Source UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Source updated',
+    type: SourceResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Source not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateSourceDto,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.sourcesService.update(id, dto, user.id);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete a source and its transactions' })
+  @ApiParam({ name: 'id', description: 'Source UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Source deleted',
+    type: MessageResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Source not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  delete(@Param('id') id: string, @CurrentUser() user: { id: string }) {
+    this.sourcesService.delete(id, user.id);
+    return { message: 'Source deleted' };
+  }
 }
