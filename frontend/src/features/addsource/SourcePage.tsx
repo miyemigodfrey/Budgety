@@ -4,7 +4,7 @@ import { OutflowOverviewChart } from "@/components/charts/OutflowChart";
 import { TransferOverviewChart } from "@/components/charts/TransferChart";
 import InflowOverviewChart from "@/components/charts/InflowChart";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AddSourceModal from "./sourceModal";
 import AddTransactionModal from "../transactions/transactionModal";
 import { getSources, type SourceDto } from "@/api/sources";
@@ -19,22 +19,27 @@ export default function SourcePage() {
 	const [transactionOpen, setTransactionOpen] = useState(false);
 	const [source, setSource] = useState<SourceDto[]>([]);
 
-	const sourceList = async () => {
-		try {
-			const data = await getSources({
-				id: "",
-				name: "",
-				balance: 0,
-				currency: "",
-				createdAt: "",
-				updatedAt: "",
-				userId: "",
-			});
-			setSource(data);
-		} catch (error) {
-			console.error("Failed to fetch sources:", error);
+	useEffect(() => {
+		async function fetchSources() {
+			try {
+				const sourcesData = await getSources({
+					id: "",
+					name: "",
+					balance: 0,
+					initialBalance: 0,
+					remainingBalance: 0,
+					currency: "",
+					createdAt: "",
+					updatedAt: "",
+					userId: "",
+				});
+				setSource(sourcesData);
+			} catch (error) {
+				console.error("Failed to fetch sources:", error);
+			}
 		}
-	};
+		fetchSources();
+	}, []);
 
 	return (
 		<div className="min-h-screen w-full flex flex-col items-center py-6 px-4">
@@ -49,25 +54,26 @@ export default function SourcePage() {
 				{/**Source List populated based on the user's sources in modal */}
 				<div className=" w-full">
 					{/**not -working ----------- MAP THROUGH SOURCES AND DISPLAY IN A CARD FORMAT  */}
-					<ul className=" w-full">
-						{source.map((item) => (
-							<li
-								key={item.id}
-								className="mt-2.5 w-full bg-white rounded-xl shadow-md p-3 border border-gray-200 divide-y divide-gray-300">
+
+					{source.map((source) => (
+						<ul key={source.id} className=" w-full">
+							<li className="mt-2.5 w-full bg-white rounded-xl shadow-md p-3 border border-gray-200 divide-y divide-gray-300">
 								<div className=" flex items-center justify-between py-1">
 									<div className="flex items-center space-x-2">
 										<Wallet className="text-green-700 size-4.5" />
-										<p className="font-semibold">{item.name}</p>
+										<p className="font-semibold">{source.name}</p>
 									</div>
 
 									<p className="text-lg md:text-xl text-gray-700 font-semibold">
-										{/**remaining balance */} £2369
+										{/**remaining balance */} {source.currency}
+										{source.remainingBalance}
 									</p>
 								</div>
 								<div className="flex items-center justify-between">
 									<div className="flex items-center gap-1">
 										<span className="text-gray-500 text-xs md:text-sm py-3">
-											{/**initial Amount */} Initial Amount | £{item.balance}
+											{/**initial Amount */} Initial Amount | {source.currency}
+											{source.initialBalance}
 										</span>
 										<Edit className="size-4 text-gray-500" />
 									</div>
@@ -76,8 +82,8 @@ export default function SourcePage() {
 									<ChevronRight className="text-gray-500 size-4.5" />
 								</div>
 							</li>
-						))}
-					</ul>
+						</ul>
+					))}
 
 					<ul className=" w-full">
 						<li className="mt-2.5 w-full bg-white rounded-xl shadow-md p-3 border border-gray-200 divide-y divide-gray-300">

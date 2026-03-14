@@ -3,12 +3,15 @@ import api from "./axios";
 type CreateSourceDto = {
 	name: string;
 	balance: number;
+	currency?: string;
 };
 
 export type SourceDto = {
 	id: string;
 	name: string;
 	balance: number;
+	initialBalance: number;
+	remainingBalance: number;
 	currency: string;
 	createdAt: string;
 	updatedAt: string;
@@ -17,7 +20,7 @@ export type SourceDto = {
 
 export const createSource = async (data: CreateSourceDto) => {
 	const res = await api.post("/sources", data);
-
+	console.log(res);
 	return res.data;
 };
 
