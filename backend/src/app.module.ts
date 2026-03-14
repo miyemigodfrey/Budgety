@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { StorageService } from './common/services/storage.service';
+import { SeedService } from './common/services/seed.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { SourcesModule } from './modules/sources/sources.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
@@ -21,7 +22,7 @@ import { ExportModule } from './modules/export/export.module';
     ReconciliationModule,
     ExportModule,
   ],
-  providers: [StorageService],
+  providers: [StorageService, SeedService],
   exports: [StorageService],
 })
 export class AppModule {}
