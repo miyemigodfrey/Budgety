@@ -8,8 +8,23 @@ import { ISource, TransactionType } from '../../common/interfaces';
 export class SourcesService {
   constructor(private readonly storage: StorageService) {}
 
-  findAll(userId: string): ISource[] {
-    return this.storage.findSourcesByUserId(userId);
+  findAll(userId: string) {
+    const sources = this.storage.findSourcesByUserId(userId);
+    const transactions = this.storage.findTransactionsByUserId(userId);
+
+    return sources.map((source) => {
+      const stats = this.computeSourceStats(
+        source.id,
+        source.balance,
+        transactions,
+      );
+
+      return {
+        ...source,
+        initialBalance: stats.openingBalance,
+        remainingBalance: source.balance,
+      };
+    });
   }
 
   findOverview(userId: string) {

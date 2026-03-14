@@ -14,6 +14,12 @@ export class SourceResponseDto {
   @ApiProperty({ example: 250000 })
   balance: number;
 
+  @ApiProperty({ example: 100000 })
+  initialBalance: number;
+
+  @ApiProperty({ example: 250000 })
+  remainingBalance: number;
+
   @ApiProperty({ example: 'NGN' })
   currency: string;
 
