@@ -1,72 +1,74 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import TransactionPage from "@/features/transactions/TransactionPage";
 import Dashboard from "./features/dashboard/DashboardPage";
 import SourcePage from "./features/addsource/SourcePage";
 import ReportPage from "./features/reports/ReportPage";
-import AppContainer from "@/components/layout/AppContainer";
 import SettingPage from "./features/settingPage/settings";
 import ReconcilationPage from "./features/reconcilation/ReconcilationPage";
 import SourceIdPage from "./features/addsource/ID/source";
 import LoginPage from "./features/login/login";
 import SignupPage from "./features/signup/signup";
-import ProtectedRoute from "./components/ProtectedRoute";
+import ProtectedLayout from "./components/layout/ProtectedLayout";
 import { AuthProvider } from "./context/AuthProvider";
 
+/**
+ * Root Application Component
+ *
+ * Routing is split into two groups:
+ *
+ * 1. PUBLIC ROUTES (/login, /signup)
+ *    - Rendered WITHOUT the sidebar/navbar (AppContainer).
+ *    - Accessible to everyone, including unauthenticated users.
+ *
+ * 2. PROTECTED ROUTES (/dashboard, /source, /transaction, etc.)
+ *    - Wrapped inside a <ProtectedLayout /> layout route.
+ *    - ProtectedLayout checks authentication:
+ *        • If authenticated → renders AppContainer (sidebar + navbar) with <Outlet />
+ *        • If NOT authenticated → redirects to /login, preserving the intended URL
+ *          in location state so the user is sent back after login.
+ *    - Uses React Router v6 layout route pattern: the parent <Route> has no `path`,
+ *      only an `element` that renders <Outlet />. Child routes render inside it.
+ *
+ * 3. ROOT REDIRECT (/)
+ *    - Navigates to /dashboard. If the user is not logged in, ProtectedLayout
+ *      will catch it and redirect to /login.
+ *
+ * AuthProvider wraps everything so auth state (token, user, login, logout)
+ * is available to all components via the useAuth() hook.
+ */
 const App = () => {
 	return (
 		<AuthProvider>
 			<BrowserRouter>
-				<AppContainer>
-					<Routes>
-						<Route path="/" element={<LoginPage />} />
+				<Routes>
+					{/* ============ PUBLIC ROUTES ============
+					    These pages render full-screen without the sidebar or navbar.
+					    They are accessible whether the user is logged in or not. */}
+					<Route path="/login" element={<LoginPage />} />
+					<Route path="/signup" element={<SignupPage />} />
 
-						<Route
-							path="/dashboard"
-							element={
-								<ProtectedRoute>
-									<Dashboard />
-								</ProtectedRoute>
-							}
-						/>
-						<Route
-							path="/source"
-							element={
-								<ProtectedRoute>
-									<SourcePage />
-								</ProtectedRoute>
-							}
-						/>
-						<Route
-							path="/transaction"
-							element={
-								<ProtectedRoute>
-									<TransactionPage />
-								</ProtectedRoute>
-							}
-						/>
-						<Route
-							path="/report"
-							element={
-								<ProtectedRoute>
-									<ReportPage />
-								</ProtectedRoute>
-							}
-						/>
-						<Route
-							path="/setting"
-							element={
-								<ProtectedRoute>
-									<SettingPage />
-								</ProtectedRoute>
-							}
-						/>
-						<Route path="/reconcilation" element={<ReconcilationPage />} />
+					{/* ============ PROTECTED ROUTES ============
+					    All child routes below are wrapped by ProtectedLayout which:
+					    - Checks if the user is authenticated via useAuth()
+					    - Redirects to /login if not (saving the intended destination)
+					    - Renders AppContainer (sidebar + navbar) around <Outlet />
+					    This is a React Router v6 "layout route" — it has no path,
+					    so it matches whenever any of its children match. */}
+					<Route element={<ProtectedLayout />}>
+						<Route path="/dashboard" element={<Dashboard />} />
+						<Route path="/source" element={<SourcePage />} />
 						<Route path="/source/id" element={<SourceIdPage />} />
-						<Route path="/login" element={<LoginPage />} />
+						<Route path="/transaction" element={<TransactionPage />} />
+						<Route path="/report" element={<ReportPage />} />
+						<Route path="/setting" element={<SettingPage />} />
+						<Route path="/reconcilation" element={<ReconcilationPage />} />
+					</Route>
 
-						<Route path="/signup" element={<SignupPage />} />
-					</Routes>
-				</AppContainer>
+					{/* ============ ROOT REDIRECT ============
+					    Visiting "/" sends the user to /dashboard.
+					    If they're not logged in, ProtectedLayout will bounce them to /login. */}
+					<Route path="/" element={<Navigate to="/dashboard" replace />} />
+				</Routes>
 			</BrowserRouter>
 		</AuthProvider>
 	);
