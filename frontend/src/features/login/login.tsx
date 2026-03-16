@@ -95,19 +95,3 @@ export default function LoginPage() {
 		</>
 	);
 }
-
-{
-	/**
-					 * 	<h1>Forgutti Global</h1>
-					  *<p> We Bring your pieces to live by giving your ideas creativity.</p>
-					<p>
-						Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quas ad
-						cupiditate quidem quia! Delectus cumque aspernatur sint
-						exercitationem ab possimus similique! Reiciendis, deserunt. Dicta
-						quidem eius fuga ut, esse eligendi!
-					</p>
-										<Button>LEARN MORE</Button>
-
-					 * 
-					 */
-}

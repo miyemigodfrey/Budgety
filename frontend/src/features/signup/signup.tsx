@@ -1,14 +1,41 @@
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import ClownTwo from "@/assets/Clown2.jpg";
 import { ArrowLeftCircle } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function SignupPage() {
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
+	const { isAuthenticated, signup } = useAuth();
+
+	const navigate = useNavigate();
+
+	if (isAuthenticated) {
+		navigate("/dashboard", { replace: true });
+	}
+
+	const handleSignup = async () => {
+		if (password !== confirmPassword) {
+			console.error("Passwords do not match");
+			return;
+		}
+
+		try {
+			const signupData = await signup({
+				name,
+				email,
+				password,
+			});
+			console.log("Signup successful:", signupData);
+			navigate("/login", { replace: true });
+		} catch (error) {
+			console.error("Failed to signup:", error);
+		}
+	};
 
 	return (
 		<>
@@ -16,11 +43,12 @@ export default function SignupPage() {
 				<Link to="/" className="absolute z-50 top-3 left-3">
 					<ArrowLeftCircle className="text-red-600" />
 				</Link>
+
 				<div className="col-span-12 md:col-span-6">
 					<div className="flex flex-col justify-center items-center space-y-5 md:p-20 h-screen">
 						<h1 className="font-semibold text-3xl">SIGNUP</h1>
 
-						<form action="submit" className="flex flex-col gap-6 flex-[0.5]">
+						<form className="flex flex-col gap-6 flex-[0.5]">
 							<input
 								type="text"
 								id="name"
@@ -55,9 +83,10 @@ export default function SignupPage() {
 								className="p-3 w-full lg:min-w-100 rounded-lg border"
 							/>
 							<Button
+								onClick={handleSignup}
 								variant={"destructive"}
 								className="w-full lg:min-w-100 rounded-lg"
-								type="submit">
+								type={"button"}>
 								SIGN UP
 							</Button>
 
@@ -83,20 +112,4 @@ export default function SignupPage() {
 			</div>
 		</>
 	);
-}
-
-{
-	/**
-					 * 	<h1>Forgutti Global</h1>
-					  *<p> We Bring your pieces to live by giving your ideas creativity.</p>
-					<p>
-						Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quas ad
-						cupiditate quidem quia! Delectus cumque aspernatur sint
-						exercitationem ab possimus similique! Reiciendis, deserunt. Dicta
-						quidem eius fuga ut, esse eligendi!
-					</p>
-										<Button>LEARN MORE</Button>
-
-					 * 
-					 */
 }

@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, type ReactNode } from 'react';
-import { AuthContext } from './AuthContext';
-import { setOnUnauthorized } from '@/api/axios';
-import type { User } from '@/api/auth';
+import { useState, useEffect, useCallback, type ReactNode } from "react";
+import { AuthContext } from "./AuthContext";
+import { setOnUnauthorized } from "@/api/axios";
+import type { User } from "@/api/auth";
+import { signup as signupApi } from "@/api/auth";
 
 interface AuthProviderProps {
-  children: ReactNode;
+	children: ReactNode;
 }
 
 /**
@@ -41,58 +42,73 @@ interface AuthProviderProps {
  *    - Provides: user, token, isAuthenticated, login(), logout()
  */
 export function AuthProvider({ children }: AuthProviderProps) {
-  // Hydrate initial state from localStorage so auth persists across refreshes
-  const [user, setUser] = useState<User | null>(() => {
-    const storedUser = localStorage.getItem('user');
-    return storedUser ? JSON.parse(storedUser) : null;
-  });
+	// Hydrate initial state from localStorage so auth persists across refreshes
+	const [user, setUser] = useState<User | null>(() => {
+		const storedUser = localStorage.getItem("user");
+		return storedUser ? JSON.parse(storedUser) : null;
+	});
 
-  const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem('token');
-  });
+	const [token, setToken] = useState<string | null>(() => {
+		return localStorage.getItem("token");
+	});
 
-  /**
-   * Logout — clears all auth state and localStorage.
-   * Memoized with useCallback so the reference stays stable for the
-   * axios 401 interceptor registration below.
-   */
-  const logout = useCallback(() => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-  }, []);
+	/**
+	 * Logout — clears all auth state and localStorage.
+	 * Memoized with useCallback so the reference stays stable for the
+	 * axios 401 interceptor registration below.
+	 */
+	const logout = useCallback(() => {
+		setToken(null);
+		setUser(null);
+		localStorage.removeItem("token");
+		localStorage.removeItem("user");
+	}, []);
 
-  /**
-   * Register the logout function as the 401 handler in the axios instance.
-   * This bridges React state (AuthProvider) with the axios module:
-   * when axios receives a 401 response, it calls this logout function,
-   * which clears auth state and causes ProtectedLayout to redirect to /login.
-   */
-  useEffect(() => {
-    setOnUnauthorized(logout);
-  }, [logout]);
+	/**
+	 * Register the logout function as the 401 handler in the axios instance.
+	 * This bridges React state (AuthProvider) with the axios module:
+	 * when axios receives a 401 response, it calls this logout function,
+	 * which clears auth state and causes ProtectedLayout to redirect to /login.
+	 */
+	useEffect(() => {
+		setOnUnauthorized(logout);
+	}, [logout]);
 
-  /**
-   * Login — stores token and user in both React state and localStorage.
-   * The axios request interceptor reads the token from localStorage,
-   * so all subsequent API calls will include "Authorization: Bearer <token>".
-   */
-  const login = (newToken: string, newUser: User) => {
-    setToken(newToken);
-    setUser(newUser);
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(newUser));
-  };
+	/**
+	 * Login — stores token and user in both React state and localStorage.
+	 * The axios request interceptor reads the token from localStorage,
+	 * so all subsequent API calls will include "Authorization: Bearer <token>".
+	 */
+	const login = (newToken: string, newUser: User) => {
+		setToken(newToken);
+		setUser(newUser);
+		localStorage.setItem("token", newToken);
+		localStorage.setItem("user", JSON.stringify(newUser));
+	};
 
-  const value = {
-    user,
-    token,
-    // Both token and user must exist for the user to be considered authenticated
-    isAuthenticated: !!token && !!user,
-    login,
-    logout,
-  };
+	const signup = async (data: {
+		name: string;
+		email: string;
+		password: string;
+	}) => {
+		const res = await signupApi(data);
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+		setToken(res.accessToken);
+		setUser(res.user);
+
+		localStorage.setItem("token", res.accessToken);
+		localStorage.setItem("user", JSON.stringify(res.user));
+	};
+
+	const value = {
+		user,
+		token,
+		// Both token and user must exist for the user to be considered authenticated
+		isAuthenticated: !!token && !!user,
+		login,
+		signup,
+		logout,
+	};
+
+	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

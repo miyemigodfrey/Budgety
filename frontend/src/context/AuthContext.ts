@@ -5,6 +5,11 @@ export interface AuthContextType {
 	user: User | null;
 	token: string | null;
 	isAuthenticated: boolean;
+	signup: (data: {
+		name: string;
+		email: string;
+		password: string;
+	}) => Promise<void>;
 	login: (token: string, user: User) => void;
 	logout: () => void;
 }

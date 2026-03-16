@@ -5,6 +5,8 @@ import {
 	LockKeyhole,
 	CalendarSync,
 	ChevronRight,
+	LogOut,
+	UserX,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
@@ -62,6 +64,14 @@ export default function SettingPage() {
 						</p>
 					</div>
 					<ChevronRight className="size-4.5 text-gray-500" />
+				</div>
+
+				<div className="bg-white w-full flex items-center justify-between rounded-xl pt-4.5 pb-2 px-1.5 space-y-2 shadow-xl ">
+					<div className="flex items-center space-x-2">
+						<UserX className="size-4.5 text-blue-800" />
+						<p className="text-sm font-semibold text-gray-900">Log Out</p>
+					</div>
+					<LogOut className="size-4.5 text-gray-500" />
 				</div>
 			</div>
 		</div>

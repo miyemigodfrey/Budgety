@@ -67,7 +67,7 @@ const App = () => {
 					{/* ============ ROOT REDIRECT ============
 					    Visiting "/" sends the user to /dashboard.
 					    If they're not logged in, ProtectedLayout will bounce them to /login. */}
-					<Route path="/" element={<Navigate to="/dashboard" replace />} />
+					<Route path="/" element={<Navigate to="/login" replace />} />
 				</Routes>
 			</BrowserRouter>
 		</AuthProvider>
