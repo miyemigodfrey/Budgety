@@ -34,7 +34,7 @@ export const login = async (data: LoginDto) => {
 };
 
 export const signup = async (data: SignupDto) => {
-	const res = await api.post<SignupResponse>("auth/signup", data);
+	const res = await api.post<SignupResponse>("auth/register", data);
 	console.log(res);
 
 	return res.data;

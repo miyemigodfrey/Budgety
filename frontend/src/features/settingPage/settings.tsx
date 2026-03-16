@@ -9,8 +9,12 @@ import {
 	UserX,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 
 export default function SettingPage() {
+	const { logout } = useAuth();
+
 	return (
 		<div className="min-h-screen w-full flex flex-col items-center py-6 px-4">
 			<header className="w-full max-w-5xl">
@@ -71,7 +75,12 @@ export default function SettingPage() {
 						<UserX className="size-4.5 text-blue-800" />
 						<p className="text-sm font-semibold text-gray-900">Log Out</p>
 					</div>
-					<LogOut className="size-4.5 text-gray-500" />
+					<Button
+						onClick={logout}
+						variant={"outline"}
+						className="rounded-lg border-gray-300 drop-shadow-xl">
+						<LogOut className="size-4.5 text-gray-500" />
+					</Button>
 				</div>
 			</div>
 		</div>
