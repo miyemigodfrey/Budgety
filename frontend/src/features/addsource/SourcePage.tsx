@@ -22,17 +22,7 @@ export default function SourcePage() {
 	useEffect(() => {
 		async function fetchSources() {
 			try {
-				const sourcesData = await getSources({
-					id: "",
-					name: "",
-					balance: 0,
-					initialBalance: 0,
-					remainingBalance: 0,
-					currency: "",
-					createdAt: "",
-					updatedAt: "",
-					userId: "",
-				});
+				const sourcesData = await getSources();
 				setSource(sourcesData);
 			} catch (error) {
 				console.error("Failed to fetch sources:", error);

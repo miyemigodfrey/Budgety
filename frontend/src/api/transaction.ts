@@ -6,6 +6,7 @@ export type createTransactionDto = {
 	amount: number;
 	category: string;
 	note: string;
+	date: string;
 	transferTargetId?: string; // For transfer transactions, the source ID of the other account
 };
 

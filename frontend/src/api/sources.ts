@@ -24,8 +24,8 @@ export const createSource = async (data: CreateSourceDto) => {
 	return res.data;
 };
 
-export const getSources = async (data: SourceDto) => {
-	const res = await api.get("/sources", { params: data });
+export const getSources = async (): Promise<SourceDto[]> => {
+	const res = await api.get("/sources");
 	console.log(res);
 	return res.data;
 };

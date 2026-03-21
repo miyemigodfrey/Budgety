@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
 	Select,
 	SelectContent,
@@ -8,9 +8,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-
 import UniversalModal from "@/components/ui/modal";
 import { createTransaction } from "@/api/transaction";
+import { getSources } from "@/api/sources";
 
 type Props = {
 	open: boolean;
@@ -20,10 +20,10 @@ type Props = {
 type Source = {
 	id: string;
 	name: string;
+	balance?: number;
 };
 
 type TransactionType = "inflow" | "outflow" | "transfer";
-
 type CategoryType = "income" | "expense";
 
 const categories = [
@@ -41,12 +41,14 @@ const categories = [
 
 export default function AddTransactionModal({ open, setOpen }: Props) {
 	const [activeTab, setActiveTab] = useState<TransactionType>("inflow");
-	const [amount, setAmount] = useState<number | "">("");
-	const [category, setCategory] = useState<string>("");
+	const [amount, setAmount] = useState("");
+	const [category, setCategory] = useState("");
 	const [sources, setSources] = useState<Source[]>([]);
-	const [source, setSource] = useState<string>("");
-	const [note, setNote] = useState<string>("");
-	const [transferTarget, setTransferTarget] = useState<string>("");
+	const [source, setSource] = useState("");
+	const [note, setNote] = useState("");
+	const [transferTarget, setTransferTarget] = useState("");
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [isLoadingSources, setIsLoadingSources] = useState(false);
 
 	const tabs: { label: string; value: TransactionType }[] = [
 		{ label: "Inflow", value: "inflow" },
@@ -54,33 +56,100 @@ export default function AddTransactionModal({ open, setOpen }: Props) {
 		{ label: "Transfer", value: "transfer" },
 	];
 
-	useEffect(() => {
-		const fetchSources = async () => {
-			try {
-				const res = await fetch("/api/sources"); // adjust endpoint
-				const data = await res.json();
-				setSources(data);
-			} catch (err) {
-				console.error("Failed to fetch sources:", err);
-			}
-		};
+	const fetchSources = async () => {
+		try {
+			setIsLoadingSources(true);
+			const data = await getSources();
+			setSources(data);
+		} catch (error) {
+			console.error("Failed to fetch sources:", error);
+		} finally {
+			setIsLoadingSources(false);
+		}
+	};
 
-		fetchSources();
-	}, []);
+	useEffect(() => {
+		if (open) {
+			fetchSources();
+		}
+	}, [open]);
+
+	useEffect(() => {
+		setCategory("");
+		setTransferTarget("");
+	}, [activeTab]);
+
+	const filteredCategories = useMemo(() => {
+		return categories.filter((cat) =>
+			activeTab === "inflow" ? cat.type === "income" : cat.type === "expense",
+		);
+	}, [activeTab]);
+
+	const transferTargetOptions = useMemo(() => {
+		return sources.filter((src) => src.id !== source);
+	}, [sources, source]);
+
+	const resetForm = () => {
+		setActiveTab("inflow");
+		setAmount("");
+		setCategory("");
+		setSource("");
+		setNote("");
+		setTransferTarget("");
+	};
 
 	const handleSubmit = async () => {
+		const parsedAmount = Number(amount);
+
+		if (!source || !category || !amount) {
+			alert("Please fill all required fields.");
+			return;
+		}
+
+		if (Number.isNaN(parsedAmount) || parsedAmount < 0.01) {
+			alert("Amount must be at least 0.01.");
+			return;
+		}
+
+		if (activeTab === "transfer" && !transferTarget) {
+			alert("Please select a transfer target.");
+			return;
+		}
+
+		if (activeTab === "transfer" && source === transferTarget) {
+			alert("You cannot transfer to the same source.");
+			return;
+		}
+
 		try {
+			setIsSubmitting(true);
+
 			await createTransaction({
-				amount: Number(amount),
-				category,
 				sourceId: source,
+				type: activeTab,
+				amount: parsedAmount,
+				category,
 				note,
-				type: activeTab === "inflow" ? "inflow" : activeTab, // fix naming				date: new Date().toISOString().split("T")[0], // YYYY-MM-DD
-				...(activeTab === "transfer" && { transferTargetId: transferTarget }),
+				date: new Date().toISOString().split("T")[0],
+				...(activeTab === "transfer" && {
+					transferTargetId: transferTarget,
+				}),
 			});
+
 			alert("Transaction created!");
-		} catch (error) {
+			resetForm();
+			setOpen(false);
+		} catch (error: any) {
 			console.error("Failed to create transaction:", error);
+
+			const message =
+				error?.response?.data?.message ||
+				error?.response?.data?.error ||
+				"Failed to create transaction";
+
+			alert(Array.isArray(message) ? message.join(", ") : message);
+		} finally {
+			setIsSubmitting(false);
 		}
 	};
 
@@ -92,8 +161,11 @@ export default function AddTransactionModal({ open, setOpen }: Props) {
 			description="Fill in the details to create a new transaction."
 			footer={
 				<div className="w-full flex flex-col gap-3">
-					<Button onClick={handleSubmit} className="bg-green-700/70">
-						Save Transaction
+					<Button
+						onClick={handleSubmit}
+						disabled={isSubmitting}
+						className="bg-green-700/70">
+						{isSubmitting ? "Saving..." : "Save Transaction"}
 					</Button>
 				</div>
 			}>
@@ -113,91 +185,92 @@ export default function AddTransactionModal({ open, setOpen }: Props) {
 					))}
 				</ul>
 
-				<div className="bg-white w-full flex flex-col items-start rounded-xl p-3 space-y-2 ">
+				<div className="bg-white w-full flex flex-col items-start rounded-xl p-3 space-y-2">
 					<div className="flex flex-col items-start py-2 space-y-2 w-full">
-						<label htmlFor="name" className="text-sm font-medium text-gray-900">
+						<label
+							htmlFor="amount"
+							className="text-sm font-medium text-gray-900">
 							Amount
 						</label>
 						<Input
 							id="amount"
 							type="number"
+							min="0.01"
+							step="0.01"
 							value={amount}
-							onChange={(e) => setAmount(Number(e.target.value))}
+							onChange={(e) => setAmount(e.target.value)}
 							placeholder="£0.00"
 							className="placeholder:text-lg placeholder:text-gray-400 w-full"
 						/>
 					</div>
 
 					<div className="w-full flex flex-col items-start py-2 space-y-2">
-						<label htmlFor="name" className="text-sm font-medium text-gray-900">
-							Source
-						</label>
-
+						<label className="text-sm font-medium text-gray-900">Source</label>
 						<Select value={source} onValueChange={setSource}>
 							<SelectTrigger>
-								<SelectValue placeholder="Select bank" />
+								<SelectValue
+									placeholder={
+										isLoadingSources ? "Loading sources..." : "Select source"
+									}
+								/>
 							</SelectTrigger>
 							<SelectContent>
 								{sources.map((src) => (
-									<SelectItem key={src.id} value={src.name}>
+									<SelectItem key={src.id} value={src.id}>
 										{src.name}
 									</SelectItem>
 								))}
-								<SelectItem value="opay">Opay</SelectItem>
-								<SelectItem value="access">Access</SelectItem>
-								<SelectItem value="zenith">Zenith</SelectItem>
 							</SelectContent>
 						</Select>
+					</div>
 
-						{/* Category */}
+					<div className="flex flex-col items-start py-2 space-y-2 w-full">
+						<label className="text-sm font-medium text-gray-900">
+							Category
+						</label>
+						<Select value={category} onValueChange={setCategory}>
+							<SelectTrigger>
+								<SelectValue placeholder="Select category" />
+							</SelectTrigger>
+							<SelectContent>
+								{filteredCategories.map((cat) => (
+									<SelectItem key={cat.name} value={cat.name}>
+										{cat.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+
+					<div className="flex flex-col items-start py-2 space-y-2 w-full">
+						<label className="text-sm font-medium text-gray-900">Notes</label>
+						<Input
+							placeholder="Optional note"
+							value={note}
+							onChange={(e) => setNote(e.target.value)}
+							className="placeholder:text-lg placeholder:text-gray-400 w-full"
+						/>
+					</div>
+
+					{activeTab === "transfer" && (
 						<div className="flex flex-col items-start py-2 space-y-2 w-full">
 							<label className="text-sm font-medium text-gray-900">
-								Category
+								Transfer Target
 							</label>
-							<Select value={category} onValueChange={setCategory}>
+							<Select value={transferTarget} onValueChange={setTransferTarget}>
 								<SelectTrigger>
-									<SelectValue placeholder="Select category" />
+									<SelectValue placeholder="Select target source" />
 								</SelectTrigger>
 								<SelectContent>
-									{categories
-										.filter((cat) =>
-											activeTab === "inflow"
-												? cat.type === "income"
-												: cat.type === "expense",
-										)
-										.map((cat) => (
-											<SelectItem key={cat.name} value={cat.name}>
-												{cat.name}
-											</SelectItem>
-										))}
+									{transferTargetOptions.map((src) => (
+										<SelectItem key={src.id} value={src.id}>
+											{src.name}
+										</SelectItem>
+									))}
 								</SelectContent>
 							</Select>
 						</div>
-
-						<div className="flex flex-col items-start py-2 space-y-2 w-full">
-							<label className="text-sm font-medium text-gray-900">Notes</label>
-							<Input
-								placeholder="Optional note"
-								value={note}
-								onChange={(e) => setNote(e.target.value)}
-								className="placeholder:text-lg placeholder:text-gray-400 w-full"
-							/>
-						</div>
-
-						{activeTab === "transfer" && (
-							<div className="flex flex-col items-start py-2 space-y-2 w-full">
-								<label className="text-sm font-medium text-gray-900">
-									Transfer Target Source ID
-								</label>
-								<Input
-									placeholder="Enter target source ID"
-									value={transferTarget}
-									onChange={(e) => setTransferTarget(e.target.value)}
-									className="placeholder:text-lg placeholder:text-gray-400 w-full"
-								/>
-							</div>
-						)}
-					</div>
+					)}
 				</div>
 			</div>
 		</UniversalModal>

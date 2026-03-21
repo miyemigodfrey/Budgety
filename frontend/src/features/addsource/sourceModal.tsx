@@ -14,9 +14,24 @@ export default function AddSourceModal({ open, setOpen }: Props) {
 	const [balance, setBalance] = useState("");
 
 	const handleSubmit = async () => {
+		if (!name.trim()) {
+			alert("Please enter a source name.");
+			return;
+		}
+
+		const parsedBalance = Number(balance);
+
+		if (Number.isNaN(parsedBalance) || parsedBalance < 0) {
+			alert("Please enter a valid opening balance.");
+			return;
+		}
+
 		try {
-			await createSource({ name, balance: Number(balance) });
+			await createSource({ name: name.trim(), balance: parsedBalance });
 			alert("Source created!");
+			setName("");
+			setBalance("");
+			setOpen(false);
 		} catch (error) {
 			console.error("Failed to create source:", error);
 		}
