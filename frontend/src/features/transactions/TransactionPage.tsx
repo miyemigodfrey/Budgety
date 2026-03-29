@@ -3,9 +3,36 @@ import { TableDemo } from "../dashboard/DashboardPage";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { TotalTransactionBarChart } from "@/components/charts/TransactionChart";
+import { useEffect, useState } from "react";
+import { getTransactions, type TransactionDto } from "@/api/transaction";
+import { getSources } from "@/api/sources";
+
+type Source = {
+	id: string;
+	name: string;
+	balance?: number;
+};
 
 function TransactionPage() {
 	const navigate = useNavigate();
+	const [transactions, setTransaction] = useState<TransactionDto[]>([]);
+	const [sources, setSources] = useState<Source[]>([]);
+
+	useEffect(() => {
+		async function fetchData() {
+			try {
+				const [transactionData, sourceData] = await Promise.all([
+					getTransactions(),
+					getSources(),
+				]);
+				setTransaction(transactionData);
+				setSources(sourceData);
+			} catch (error) {
+				console.error("Failed to fetch data:", error);
+			}
+		}
+		fetchData();
+	}, []);
 
 	return (
 		<>
@@ -57,88 +84,47 @@ function TransactionPage() {
 								Recent Transactions
 							</h2>
 
-							<ul className="px-4">
-								{/* Transaction 1 */}
-								<li className="pb-4 pt-2 border-b border-gray-200 flex items-start justify-between gap-3">
-									<div className="flex items-start gap-3">
-										<div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-200">
-											<Wallet className="text-green-700 w-5 h-5" />
-										</div>
+							<div className="overflow-y-scroll h-125">
+								{transactions.map((transaction) => {
+									const source = sources.find(
+										(src) => src.id === transaction.sourceId,
+									);
+									return (
+										<ul key={transaction.id} className="px-4">
+											<li className="pb-4 pt-2 border-b border-gray-200 flex items-start justify-between gap-3">
+												<div className="flex items-start gap-3">
+													<div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-200">
+														<Wallet className="text-green-700 w-5 h-5" />
+													</div>
 
-										<div className="space-y-1">
-											<p className="font-semibold text-sm md:text-base">
-												Salary
-											</p>
+													<div className="space-y-1">
+														<p className="font-semibold text-sm md:text-base">
+															{source?.name || "Unknown Source"}
+														</p>
 
-											<p className="text-xs md:text-sm text-gray-500">
-												Added on 1st Jan 2024
-											</p>
+														<p className="text-xs md:text-sm text-gray-500">
+															{transaction.createdAt}
+														</p>
 
-											<span className="inline-block font-semibold text-xs md:text-sm text-gray-700 bg-gray-200 px-3 py-1 rounded-full">
-												Opay
-											</span>
-										</div>
-									</div>
+														<div className="flex items-center gap-2.5">
+															<span className="inline-block font-semibold text-xs md:text-sm text-gray-700 bg-gray-200 px-3 py-1 rounded-full">
+																Opay
+															</span>
+															<span className="inline-block font-semibold text-xs md:text-sm text-gray-700 bg-gray-200 px-3 py-1 rounded-full">
+																{transaction.type}
+															</span>
+														</div>
+													</div>
+												</div>
 
-									<p className="text-green-700 font-semibold text-sm md:text-base whitespace-nowrap">
-										+£8,000
-									</p>
-								</li>
-
-								{/* Transaction 2 */}
-								<li className="pb-4 pt-2 border-b border-gray-200 flex items-start justify-between gap-3">
-									<div className="flex items-start gap-3">
-										<div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-200">
-											<Wallet className="text-red-700 w-5 h-5" />
-										</div>
-
-										<div className="space-y-1">
-											<p className="font-semibold text-sm md:text-base">
-												Grocery Shopping
-											</p>
-
-											<p className="text-xs md:text-sm text-gray-500">
-												Added on 21st Jan 2024
-											</p>
-
-											<span className="inline-block font-semibold text-xs md:text-sm text-gray-700 bg-gray-200 px-3 py-1 rounded-full">
-												Access
-											</span>
-										</div>
-									</div>
-
-									<p className="text-red-700 font-semibold text-sm md:text-base whitespace-nowrap">
-										-£200
-									</p>
-								</li>
-
-								{/* Transaction 3 */}
-								<li className="pb-4 pt-2 border-b border-gray-200 flex items-start justify-between gap-3">
-									<div className="flex items-start gap-3">
-										<div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-200">
-											<Wallet className="text-green-700 w-5 h-5" />
-										</div>
-
-										<div className="space-y-1">
-											<p className="font-semibold text-sm md:text-base">
-												Freelance
-											</p>
-
-											<p className="text-xs md:text-sm text-gray-500">
-												Added on 1st Jan 2024
-											</p>
-
-											<span className="inline-block font-semibold text-xs md:text-sm text-gray-700 bg-gray-200 px-3 py-1 rounded-full">
-												Cash
-											</span>
-										</div>
-									</div>
-
-									<p className="text-green-700 font-semibold text-sm md:text-base whitespace-nowrap">
-										+£1,500
-									</p>
-								</li>
-							</ul>
+												<p className="text-green-700 font-semibold text-sm md:text-base whitespace-nowrap">
+													{transaction.amount}
+												</p>
+											</li>
+										</ul>
+									);
+								})}
+							</div>
 						</div>
 
 						{/* Buttons */}

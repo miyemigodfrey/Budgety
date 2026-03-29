@@ -30,8 +30,8 @@ export const createTransaction = async (data: createTransactionDto) => {
 	return res.data;
 };
 
-export const getTransactions = async (data: TransactionDto) => {
-	const res = await api.get("/transactions", { params: data });
+export const getTransactions = async (): Promise<TransactionDto[]> => {
+	const res = await api.get("/transactions");
 	console.log(res);
 	return res.data;
 };

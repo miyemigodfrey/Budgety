@@ -1,6 +1,6 @@
 import api from "./axios";
 
-type CreateSourceDto = {
+export type CreateSourceDto = {
 	name: string;
 	balance: number;
 	currency?: string;

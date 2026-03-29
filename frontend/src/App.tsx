@@ -11,31 +11,6 @@ import SignupPage from "./features/signup/signup";
 import ProtectedLayout from "./components/layout/ProtectedLayout";
 import { AuthProvider } from "./context/AuthProvider";
 
-/**
- * Root Application Component
- *
- * Routing is split into two groups:
- *
- * 1. PUBLIC ROUTES (/login, /signup)
- *    - Rendered WITHOUT the sidebar/navbar (AppContainer).
- *    - Accessible to everyone, including unauthenticated users.
- *
- * 2. PROTECTED ROUTES (/dashboard, /source, /transaction, etc.)
- *    - Wrapped inside a <ProtectedLayout /> layout route.
- *    - ProtectedLayout checks authentication:
- *        • If authenticated → renders AppContainer (sidebar + navbar) with <Outlet />
- *        • If NOT authenticated → redirects to /login, preserving the intended URL
- *          in location state so the user is sent back after login.
- *    - Uses React Router v6 layout route pattern: the parent <Route> has no `path`,
- *      only an `element` that renders <Outlet />. Child routes render inside it.
- *
- * 3. ROOT REDIRECT (/)
- *    - Navigates to /dashboard. If the user is not logged in, ProtectedLayout
- *      will catch it and redirect to /login.
- *
- * AuthProvider wraps everything so auth state (token, user, login, logout)
- * is available to all components via the useAuth() hook.
- */
 const App = () => {
 	return (
 		<AuthProvider>
