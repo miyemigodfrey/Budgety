@@ -1,54 +1,43 @@
 import { Button } from "@/components/ui/button";
-import { FileText, House, Plus, Printer, Settings } from "lucide-react";
+import { FileText, Plus, Settings } from "lucide-react";
 import AddSourceModal from "@/features/addsource/sourceModal";
 import budgetydash from "@/assets/budgety-dashboard.png";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AddTransactionModal from "../transactions/transactionModal";
-
-const invoices = [
-	{
-		id: 1,
-		icon: House,
-		sourceName: "Opay",
-		dateAdded: "25-02-2000",
-		PaymentAmount: "£40,000",
-	},
-	{
-		id: 2,
-		icon: FileText,
-		sourceName: "Access",
-		dateAdded: "25-02-2000",
-		PaymentAmount: "£30,000",
-	},
-	{
-		id: 3,
-		icon: Printer,
-		sourceName: "Zenith",
-		dateAdded: "25-02-2000",
-		PaymentAmount: "£8,000",
-	},
-];
+import { getSources, type SourceDto } from "@/api/sources";
 
 export function TableDemo() {
+	const [sources, setSources] = useState<SourceDto[]>([]);
+
+	useEffect(() => {
+		async function fetchData() {
+			try {
+				const [sourceData] = await Promise.all([getSources()]);
+				setSources(sourceData);
+			} catch (error) {
+				console.error("Failed to fetch data:", error);
+			}
+		}
+		fetchData();
+	}, []);
+
 	return (
 		<>
 			<Table>
 				<TableBody>
-					{invoices.map((invoice) => {
-						const Icon = invoice.icon;
+					{sources.map((source) => {
 						return (
-							<TableRow key={invoice.id}>
+							<TableRow key={source.id}>
 								<TableCell className="font-semibold flex items-center gap-x-1.5">
-									<Icon size={16} className="text-green-700" />
-
-									{invoice.sourceName}
+									<FileText size={16} className="text-green-700" />
+									{source.name}
 								</TableCell>
 								<TableCell className="text-gray-500 text-xs">
-									{invoice.dateAdded}
+									{source.createdAt}
 								</TableCell>
 								<TableCell className="text-right font-semibold">
-									{invoice.PaymentAmount}
+									{source.currency} {source.initialBalance}
 								</TableCell>
 							</TableRow>
 						);

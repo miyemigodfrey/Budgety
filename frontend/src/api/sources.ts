@@ -20,12 +20,10 @@ export type SourceDto = {
 
 export const createSource = async (data: CreateSourceDto) => {
 	const res = await api.post("/sources", data);
-	console.log(res);
 	return res.data;
 };
 
 export const getSources = async (): Promise<SourceDto[]> => {
 	const res = await api.get("/sources");
-	console.log(res);
 	return res.data;
 };

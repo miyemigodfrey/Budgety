@@ -5,6 +5,10 @@ import { useNavigate } from "react-router-dom";
 import { TotalTransactionBarChart } from "@/components/charts/TransactionChart";
 import { useEffect, useState } from "react";
 import { getTransactions, type TransactionDto } from "@/api/transaction";
+import {
+	getTransactionOverview,
+	type TransactionOverviewDto,
+} from "@/api/overview";
 import { getSources } from "@/api/sources";
 
 type Source = {
@@ -17,16 +21,21 @@ function TransactionPage() {
 	const navigate = useNavigate();
 	const [transactions, setTransaction] = useState<TransactionDto[]>([]);
 	const [sources, setSources] = useState<Source[]>([]);
+	const [transactionOverview, setTransactionOverview] =
+		useState<TransactionOverviewDto | null>(null);
 
 	useEffect(() => {
 		async function fetchData() {
 			try {
-				const [transactionData, sourceData] = await Promise.all([
-					getTransactions(),
-					getSources(),
-				]);
+				const [transactionData, sourceData, transactionOverviewData] =
+					await Promise.all([
+						getTransactions(),
+						getSources(),
+						getTransactionOverview(),
+					]);
 				setTransaction(transactionData);
 				setSources(sourceData);
+				setTransactionOverview(transactionOverviewData);
 			} catch (error) {
 				console.error("Failed to fetch data:", error);
 			}
@@ -47,7 +56,9 @@ function TransactionPage() {
 				<div className="mt-8 w-full  bg-white rounded-xl shadow-md">
 					<div className="bg-blue-700/70 rounded-t-xl p-4">
 						<h3 className=" font-semibold text-white text-xl">Total Initial</h3>
-						<p className="text-3xl font-semibold text-white ">£100,000 </p>
+						<p className="text-3xl font-semibold text-white ">
+							{transactionOverview?.totalInitialBalance}
+						</p>
 					</div>
 					<TableDemo />
 				</div>
@@ -55,7 +66,9 @@ function TransactionPage() {
 				<div className="w-full max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
 					<div className="lg:col-span-4 bg-white rounded-xl shadow-md p-5">
 						<h3 className="text-gray-500 text-sm">Total Balance</h3>
-						<p className="text-3xl font-bold mt-2">£12,450</p>
+						<p className="text-3xl font-bold mt-2">
+							£{transactionOverview?.totalBalance}
+						</p>
 						<p className="text-sm text-gray-500 mt-1">Across all sources</p>
 					</div>
 
@@ -63,7 +76,7 @@ function TransactionPage() {
 					<div className="lg:col-span-4 bg-white rounded-xl shadow-md p-5">
 						<h3 className="text-gray-500 text-sm">Total Inflow</h3>
 						<p className="text-2xl font-semibold text-green-700 mt-2">
-							+£9,200
+							+£{transactionOverview?.monthly.inflow}
 						</p>
 						<p className="text-sm text-gray-500 mt-1">This month</p>
 					</div>
@@ -71,7 +84,9 @@ function TransactionPage() {
 					{/* OUTFLOW SUMMARY */}
 					<div className="lg:col-span-4 bg-white rounded-xl shadow-md p-5">
 						<h3 className="text-gray-500 text-sm">Total Outflow</h3>
-						<p className="text-2xl font-semibold text-red-700 mt-2">-£4,120</p>
+						<p className="text-2xl font-semibold text-red-700 mt-2">
+							-£ {transactionOverview?.monthly.outflow}
+						</p>
 						<p className="text-sm text-gray-500 mt-1">This month</p>
 					</div>
 				</div>
