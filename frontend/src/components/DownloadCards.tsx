@@ -43,7 +43,7 @@ export function DownloardCards() {
 				<ClipboardList className="text-green-700" />
 				<div className="flex items-center justify-between">
 					<p className="text-sm text-green-700 mt-1">This month</p>
-					<Button className="bg-inherit border-none">
+					<Button className="bg-inherit border-none" onClick={handleDownload}>
 						<Download className="text-gray-400 size-6" />
 					</Button>
 				</div>

@@ -5,11 +5,11 @@ import SourcePage from "./features/addsource/SourcePage";
 import ReportPage from "./features/reports/ReportPage";
 import SettingPage from "./features/settingPage/settings";
 import ReconcilationPage from "./features/reconcilation/ReconcilationPage";
-import SourceIdPage from "./features/addsource/ID/source";
 import LoginPage from "./features/login/login";
 import SignupPage from "./features/signup/signup";
 import ProtectedLayout from "./components/layout/ProtectedLayout";
 import { AuthProvider } from "./context/AuthProvider";
+import SourcesIdPage from "./features/addsource/SourceDetails.tsx";
 
 const App = () => {
 	return (
@@ -32,7 +32,7 @@ const App = () => {
 					<Route element={<ProtectedLayout />}>
 						<Route path="/dashboard" element={<Dashboard />} />
 						<Route path="/source" element={<SourcePage />} />
-						<Route path="/source/id" element={<SourceIdPage />} />
+						<Route path="/source/:id" element={<SourcesIdPage />} />
 						<Route path="/transaction" element={<TransactionPage />} />
 						<Route path="/report" element={<ReportPage />} />
 						<Route path="/setting" element={<SettingPage />} />

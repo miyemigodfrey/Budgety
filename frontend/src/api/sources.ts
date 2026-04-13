@@ -27,3 +27,10 @@ export const getSources = async (): Promise<SourceDto[]> => {
 	const res = await api.get("/sources");
 	return res.data;
 };
+
+export const getSourceById = async (id: string) => {
+	const res = await api.get(`/sources/${id}`);
+	return res.data;
+};
+
+

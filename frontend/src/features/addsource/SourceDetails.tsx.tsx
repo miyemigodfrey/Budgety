@@ -1,7 +1,31 @@
 import { Download, Ellipsis, Wallet } from "lucide-react";
 import { TotalTransactionBarChart } from "@/components/charts/TransactionChart";
+import { useParams } from "react-router-dom";
+import { getSourceById } from "@/api/sources";
+import { useEffect, useState } from "react";
 
-function TransactionPage() {
+function SourcesIdPage() {
+	const { id } = useParams();
+	const [data, setData] = useState<unknown>(null);
+	const [loading, setLoading] = useState(true);
+
+	useEffect(() => {
+		const fetchSourceId = async () => {
+			try {
+				if (!id) return;
+				const result = await getSourceById(id);
+				setData(result);
+			} catch (error) {
+				console.error("Failed to fetch source:", error);
+			} finally {
+				setLoading(false);
+			}
+		};
+		fetchSourceId();
+	}, [id]);
+
+	if (loading) return <p>Loading...</p>;
+
 	return (
 		<>
 			<div className="min-h-screen w-full flex flex-col items-center py-6 px-4">
@@ -44,6 +68,8 @@ function TransactionPage() {
 						<p className="text-sm text-gray-500 mt-1">This month</p>
 					</div>
 				</div>
+
+				<pre>{JSON.stringify(data, null, 2)}</pre>
 
 				<div className="w-full grid grid-cols-1 lg:grid-cols-5 gap-6 items-start mt-6">
 					{/* LEFT SECTION */}
@@ -158,4 +184,4 @@ function TransactionPage() {
 	);
 }
 
-export default TransactionPage;
+export default SourcesIdPage;

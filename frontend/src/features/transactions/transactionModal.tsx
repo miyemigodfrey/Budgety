@@ -169,13 +169,13 @@ export default function AddTransactionModal({ open, setOpen }: Props) {
 					</Button>
 				</div>
 			}>
-			<div className="space-y-5 w-full">
+			<div className="space-y-2 w-full">
 				<ul className="bg-gray-300 w-full flex items-center justify-around rounded-xl p-1">
 					{tabs.map((tab) => (
 						<li
 							key={tab.value}
 							onClick={() => setActiveTab(tab.value)}
-							className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ease-in-out ${
+							className={`cursor-pointer px-4 py-1 rounded-lg text-sm font-medium transition-all duration-300 ease-in-out ${
 								activeTab === tab.value
 									? "bg-white shadow text-gray-900"
 									: "text-gray-600 hover:bg-gray-200"
@@ -185,7 +185,7 @@ export default function AddTransactionModal({ open, setOpen }: Props) {
 					))}
 				</ul>
 
-				<div className="bg-white w-full flex flex-col items-start rounded-xl p-3 space-y-2">
+				<div className="bg-white w-full flex flex-col items-start rounded-xl p-3 space-y-1">
 					<div className="flex flex-col items-start py-2 space-y-2 w-full">
 						<label
 							htmlFor="amount"

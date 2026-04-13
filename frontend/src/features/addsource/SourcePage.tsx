@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import AddSourceModal from "./sourceModal";
 import AddTransactionModal from "../transactions/transactionModal";
 import { getSources, type SourceDto } from "@/api/sources";
+import { Link } from "react-router-dom";
 
 export default function SourcePage() {
 	const criteriaMet = false;
@@ -69,7 +70,9 @@ export default function SourcePage() {
 									</div>
 
 									{/**LINK TO GO SOURCE DETAILS */}
-									<ChevronRight className="text-gray-500 size-4.5" />
+									<Link to={`/sources/${source.id}`}>
+										<ChevronRight className="text-gray-500 size-4.5" />
+									</Link>
 								</div>
 							</li>
 						</ul>

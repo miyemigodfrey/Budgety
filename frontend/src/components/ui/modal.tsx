@@ -38,7 +38,7 @@ export default function UniversalModal({
 				className={`
 					w-full
 					h-full
-					sm:h-auto
+					sm:h-fit
 					sm:max-w-lg
 					sm:rounded-3xl
 					sm:mx-auto
