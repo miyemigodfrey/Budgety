@@ -32,7 +32,7 @@ const App = () => {
 					<Route element={<ProtectedLayout />}>
 						<Route path="/dashboard" element={<Dashboard />} />
 						<Route path="/source" element={<SourcePage />} />
-						<Route path="/source/:id" element={<SourcesIdPage />} />
+						<Route path="/sources/:id" element={<SourcesIdPage />} />
 						<Route path="/transaction" element={<TransactionPage />} />
 						<Route path="/report" element={<ReportPage />} />
 						<Route path="/setting" element={<SettingPage />} />
