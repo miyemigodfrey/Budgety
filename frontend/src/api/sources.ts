@@ -47,6 +47,13 @@ export type SourceId = {
 	transactions: Transaction[];
 };
 
+export type SourceSummary = {
+	inflow: number;
+	outflow: number;
+	net: number;
+	period: string;
+};
+
 export const createSource = async (data: CreateSourceDto) => {
 	const res = await api.post("/sources", data);
 	return res.data;
@@ -59,5 +66,10 @@ export const getSources = async (): Promise<SourceDto[]> => {
 
 export const getSourceById = async (id: string): Promise<SourceId> => {
 	const res = await api.get(`/sources/${id}`);
+	return res.data;
+};
+
+export const getSummary = async (id: string): Promise<SourceSummary> => {
+	const res = await api.get(`/sources/${id}/summary`);
 	return res.data;
 };

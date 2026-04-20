@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { TotalTransactionBarChart } from "@/components/charts/TransactionChart";
 import { useEffect, useState } from "react";
+import { formatDate } from "@/lib/formatDate";
+
 import { getTransactions, type TransactionDto } from "@/api/transaction";
 import {
 	getTransactionOverview,
@@ -106,33 +108,51 @@ function TransactionPage() {
 									);
 									return (
 										<ul key={transaction.id} className="px-4">
-											<li className="pb-4 pt-2 border-b border-gray-200 flex items-start justify-between gap-3">
+											<li
+												className={
+													`pb-4 pt-2 border-b border-gray-200 flex items-start justify-between gap-3 ` +
+													(transaction.type === "inflow"
+														? " text-green-700"
+														: " text-red-700")
+												}>
 												<div className="flex items-start gap-3">
-													<div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-200">
-														<Wallet className="text-green-700 w-5 h-5" />
+													<div
+														className={
+															`flex items-center justify-center w-10 h-10 rounded-full bg-green-200"` +
+															(transaction.type === "inflow"
+																? " bg-green-200  "
+																: " bg-red-200")
+														}>
+														<Wallet className=" w-5 h-5" />
 													</div>
 
 													<div className="space-y-1">
-														<p className="font-semibold text-sm md:text-base">
+														<p className="font-semibold text-gray-700 text-sm md:text-base">
 															{source?.name || "Unknown Source"}
 														</p>
 
 														<p className="text-xs md:text-sm text-gray-500">
-															{transaction.createdAt}
+															Added on {formatDate(transaction.createdAt)}
 														</p>
 
 														<div className="flex items-center gap-2.5">
 															<span className="inline-block font-semibold text-xs md:text-sm text-gray-700 bg-gray-200 px-3 py-1 rounded-full">
 																Opay
 															</span>
-															<span className="inline-block font-semibold text-xs md:text-sm text-gray-700 bg-gray-200 px-3 py-1 rounded-full">
+															<span
+																className={
+																	`"inline-block font-semibold text-xs md:text-sm bg-gray-200 border px-3 py-1 rounded-full` +
+																	(transaction.type === "inflow"
+																		? " bg-green-200 border-green-500"
+																		: " bg-red-200  border-red-500")
+																}>
 																{transaction.type}
 															</span>
 														</div>
 													</div>
 												</div>
 
-												<p className="text-green-700 font-semibold text-sm md:text-base whitespace-nowrap">
+												<p className="font-semibold text-sm md:text-base whitespace-nowrap">
 													{transaction.amount}
 												</p>
 											</li>

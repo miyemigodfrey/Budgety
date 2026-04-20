@@ -5,6 +5,7 @@ import budgetydash from "@/assets/budgety-dashboard.png";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { useEffect, useState } from "react";
 import AddTransactionModal from "../transactions/transactionModal";
+import { formatDate } from "@/lib/formatDate";
 import { getSources, type SourceDto } from "@/api/sources";
 
 export function TableDemo() {
@@ -34,7 +35,7 @@ export function TableDemo() {
 									{source.name}
 								</TableCell>
 								<TableCell className="text-gray-500 text-xs">
-									{source.createdAt}
+									{formatDate(source.createdAt)}
 								</TableCell>
 								<TableCell className="text-right font-semibold">
 									{source.currency} {source.initialBalance}

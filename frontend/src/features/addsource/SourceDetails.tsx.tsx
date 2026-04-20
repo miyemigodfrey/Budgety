@@ -1,12 +1,20 @@
 import { Download, Ellipsis, Wallet } from "lucide-react";
 import { TotalTransactionBarChart } from "@/components/charts/TransactionChart";
 import { useParams } from "react-router-dom";
-import { getSourceById, type SourceId } from "@/api/sources";
+import {
+	getSourceById,
+	type SourceId,
+	getSummary,
+	type SourceSummary,
+} from "@/api/sources";
 import { useEffect, useState } from "react";
+import { formatDate } from "@/lib/formatDate";
 
 function SourcesIdPage() {
 	const { id } = useParams();
 	const [data, setData] = useState<SourceId | null>(null);
+	const [period, setPeriod] = useState("monthly");
+	const [summary, setSummary] = useState<SourceSummary | null>(null);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
@@ -28,6 +36,20 @@ function SourcesIdPage() {
 		fetchSourceId();
 	}, [id]);
 
+	useEffect(() => {
+		const fetchSummary = async () => {
+			if (!id) return;
+			try {
+				const res = await getSummary(id);
+				setSummary(res);
+				console.log("Summary:", res);
+			} catch (error) {
+				console.error("Failed to fetch summary:", error);
+			}
+		};
+		fetchSummary();
+	}, [id]);
+
 	if (loading) return <p>Loading...</p>;
 
 	return (
@@ -43,9 +65,13 @@ function SourcesIdPage() {
 
 				<div className="bg-blue-700/70 rounded-t-xl p-4 mt-4 w-full  rounded-xl shadow-md">
 					<h3 className=" font-semibold text-white text-xl">My {data?.name}</h3>
-					<p className="text-3xl font-semibold text-white ">£100,000 </p>
+					<p className="text-3xl font-semibold text-white ">
+						{data?.currency}
+						{data?.initialBalance}
+					</p>
 					<p className="text-xl font-semibold text-end text-gray-200 ">
-						{data?.currency} {data?.balance}
+						{data?.currency}
+						{data?.balance}
 					</p>
 				</div>
 
@@ -56,26 +82,76 @@ function SourcesIdPage() {
 							{data?.currency} {data?.balance}
 						</p>
 						<p className="text-sm text-gray-500 mt-1">In: {data?.name}</p>
+						<p className="text-sm text-gray-500 mt-1">
+							{period === "daily"
+								? "Today"
+								: period === "monthly"
+									? "month"
+									: period === "yearly"
+										? "year"
+										: "period"}
+						</p>
 					</div>
 
 					{/* INFLOW SUMMARY */}
 					<div className="lg:col-span-4 bg-white rounded-xl shadow-md p-5">
-						<h3 className="text-gray-500 text-sm">Total Inflow</h3>
+						<div className="flex items-center justify-between">
+							<h3 className="text-gray-500 text-sm">Total Inflow</h3>
+
+							<select
+								value={period}
+								onChange={(e) => setPeriod(e.target.value)}
+								className="border p-2 rounded">
+								<option value="daily">Daily</option>
+								<option value="monthly">Monthly</option>
+								<option value="yearly">Yearly</option>
+								<option value="all">All</option>
+							</select>
+						</div>
 						<p className="text-2xl font-semibold text-green-700 mt-2">
-							+£2,207
+							+{data?.currency} {summary?.inflow ?? 0}
 						</p>
-						<p className="text-sm text-gray-500 mt-1">This month</p>
+
+						<p className="text-sm text-gray-500 mt-1">
+							{period === "daily"
+								? "Today"
+								: period === "monthly"
+									? "month"
+									: period === "yearly"
+										? "year"
+										: "period"}
+						</p>
 					</div>
 
 					{/* OUTFLOW SUMMARY */}
 					<div className="lg:col-span-4 bg-white rounded-xl shadow-md p-5">
-						<h3 className="text-gray-500 text-sm">Total Outflow</h3>
-						<p className="text-2xl font-semibold text-red-700 mt-2">-£1,120</p>
-						<p className="text-sm text-gray-500 mt-1">This month</p>
+						<div className="flex items-center justify-between">
+							<h3 className="text-gray-500 text-sm">Total Outflow</h3>
+
+							<select
+								value={period}
+								onChange={(e) => setPeriod(e.target.value)}
+								className="border p-2 rounded">
+								<option value="daily">Daily</option>
+								<option value="monthly">Monthly</option>
+								<option value="yearly">Yearly</option>
+								<option value="all">All</option>
+							</select>
+						</div>
+						<p className="text-2xl font-semibold text-red-700 mt-2">
+							-{data?.currency} {summary?.outflow ?? 0}
+						</p>
+						<p className="text-sm text-gray-500 mt-1">
+							{period === "daily"
+								? "Today"
+								: period === "monthly"
+									? "month"
+									: period === "yearly"
+										? "year"
+										: "period"}
+						</p>
 					</div>
 				</div>
-
-				<pre>{JSON.stringify(data, null, 2)}</pre>
 
 				<div className="w-full grid grid-cols-1 lg:grid-cols-5 gap-6 items-start mt-6">
 					{/* LEFT SECTION */}
@@ -87,14 +163,26 @@ function SourcesIdPage() {
 
 							<Ellipsis />
 						</div>
-
-						{data?.transactions.map((sourcetrans) => {
-							return (
-								<ul key={data.id}>
-									<li className="pb-4 pt-2 border-b border-gray-200 flex items-start justify-between gap-3">
+						<ul>
+							{data?.transactions.map((sourcetrans) => {
+								return (
+									<li
+										key={sourcetrans.id}
+										className={
+											`pb-4 pt-2 border-b border-gray-200 flex items-start justify-between gap-3` +
+											(sourcetrans.type === "inflow"
+												? " text-green-700"
+												: " text-red-700")
+										}>
 										<div className="flex items-start gap-3">
-											<div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-200">
-												<Wallet className="text-green-700 w-5 h-5" />
+											<div
+												className={
+													`flex items-center justify-center w-10 h-10 rounded-full bg-green-200"` +
+													(sourcetrans.type === "inflow"
+														? " bg-green-200"
+														: " bg-red-200")
+												}>
+												<Wallet className=" w-5 h-5" />
 											</div>
 
 											<div className="space-y-1">
@@ -103,18 +191,18 @@ function SourcesIdPage() {
 												</p>
 
 												<p className="text-xs md:text-sm text-gray-500">
-													Added on {sourcetrans.createdAt}
+													Added on {formatDate(sourcetrans.createdAt)}
 												</p>
 											</div>
 										</div>
 
-										<p className="text-green-700 font-semibold text-sm md:text-base whitespace-nowrap">
+										<p className=" font-semibold text-sm md:text-base whitespace-nowrap">
 											{data?.currency} {sourcetrans.amount}
 										</p>
 									</li>
-								</ul>
-							);
-						})}
+								);
+							})}
+						</ul>
 					</div>
 
 					{/* RIGHT SECTION */}
