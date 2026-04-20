@@ -17,6 +17,41 @@ function SourcesIdPage() {
 	const [summary, setSummary] = useState<SourceSummary | null>(null);
 	const [loading, setLoading] = useState(true);
 
+	const cards = [
+		{
+			title: "Total Balance",
+			value: `${data?.currency} ${data?.balance}`,
+			sub: `In: ${data?.name}`,
+			color: "",
+			showSelect: false,
+		},
+		{
+			title: "Total Inflow",
+			value: `+${data?.currency} ${summary?.inflow ?? 0}`,
+			color: "text-green-700",
+			showSelect: true,
+		},
+		{
+			title: "Total Outflow",
+			value: `-${data?.currency} ${summary?.outflow ?? 0}`,
+			color: "text-red-700",
+			showSelect: true,
+		},
+	];
+
+	const getPeriodLabel = () => {
+		switch (period) {
+			case "daily":
+				return "Today";
+			case "monthly":
+				return "month";
+			case "yearly":
+				return "year";
+			default:
+				return "period";
+		}
+	};
+
 	useEffect(() => {
 		const fetchSourceId = async () => {
 			try {
@@ -76,81 +111,37 @@ function SourcesIdPage() {
 				</div>
 
 				<div className="w-full max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
-					<div className="lg:col-span-4 bg-white rounded-xl shadow-md p-5">
-						<h3 className="text-gray-500 text-sm">Total Balance</h3>
-						<p className="text-2xl font-semibold mt-2">
-							{data?.currency} {data?.balance}
-						</p>
-						<p className="text-sm text-gray-500 mt-1">In: {data?.name}</p>
-						<p className="text-sm text-gray-500 mt-1">
-							{period === "daily"
-								? "Today"
-								: period === "monthly"
-									? "month"
-									: period === "yearly"
-										? "year"
-										: "period"}
-						</p>
-					</div>
+					{cards.map((card, index) => (
+						<div
+							key={index}
+							className="lg:col-span-4 bg-white rounded-xl shadow-md p-5">
+							<div className="flex items-center justify-between">
+								<h3 className="text-gray-500 text-sm">{card.title}</h3>
 
-					{/* INFLOW SUMMARY */}
-					<div className="lg:col-span-4 bg-white rounded-xl shadow-md p-5">
-						<div className="flex items-center justify-between">
-							<h3 className="text-gray-500 text-sm">Total Inflow</h3>
+								{card.showSelect && (
+									<select
+										value={period}
+										onChange={(e) => setPeriod(e.target.value)}
+										className="border p-2 rounded">
+										<option value="daily">Daily</option>
+										<option value="monthly">Monthly</option>
+										<option value="yearly">Yearly</option>
+										<option value="all">All</option>
+									</select>
+								)}
+							</div>
 
-							<select
-								value={period}
-								onChange={(e) => setPeriod(e.target.value)}
-								className="border p-2 rounded">
-								<option value="daily">Daily</option>
-								<option value="monthly">Monthly</option>
-								<option value="yearly">Yearly</option>
-								<option value="all">All</option>
-							</select>
+							<p className={`text-2xl font-semibold mt-2 ${card.color}`}>
+								{card.value}
+							</p>
+
+							{card.sub && (
+								<p className="text-sm text-gray-500 mt-1">{card.sub}</p>
+							)}
+
+							<p className="text-sm text-gray-500 mt-1">{getPeriodLabel()}</p>
 						</div>
-						<p className="text-2xl font-semibold text-green-700 mt-2">
-							+{data?.currency} {summary?.inflow ?? 0}
-						</p>
-
-						<p className="text-sm text-gray-500 mt-1">
-							{period === "daily"
-								? "Today"
-								: period === "monthly"
-									? "month"
-									: period === "yearly"
-										? "year"
-										: "period"}
-						</p>
-					</div>
-
-					{/* OUTFLOW SUMMARY */}
-					<div className="lg:col-span-4 bg-white rounded-xl shadow-md p-5">
-						<div className="flex items-center justify-between">
-							<h3 className="text-gray-500 text-sm">Total Outflow</h3>
-
-							<select
-								value={period}
-								onChange={(e) => setPeriod(e.target.value)}
-								className="border p-2 rounded">
-								<option value="daily">Daily</option>
-								<option value="monthly">Monthly</option>
-								<option value="yearly">Yearly</option>
-								<option value="all">All</option>
-							</select>
-						</div>
-						<p className="text-2xl font-semibold text-red-700 mt-2">
-							-{data?.currency} {summary?.outflow ?? 0}
-						</p>
-						<p className="text-sm text-gray-500 mt-1">
-							{period === "daily"
-								? "Today"
-								: period === "monthly"
-									? "month"
-									: period === "yearly"
-										? "year"
-										: "period"}
-						</p>
-					</div>
+					))}
 				</div>
 
 				<div className="w-full grid grid-cols-1 lg:grid-cols-5 gap-6 items-start mt-6">

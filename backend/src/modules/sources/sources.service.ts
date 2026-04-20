@@ -86,7 +86,15 @@ export class SourcesService {
 		if (!source) throw new NotFoundException("Source not found");
 
 		const transactions = this.storage.findTransactionsBySourceId(id, userId);
-		return { ...source, transactions };
+		const allTransactions = this.storage.findTransactionsByUserId(userId);
+		const stats = this.computeSourceStats(id, source.balance, allTransactions);
+
+		return {
+			...source,
+			initialBalance: stats.openingBalance,
+			remainingBalance: source.balance,
+			transactions,
+		};
 	}
 
 	findOverviewById(id: string, userId: string) {
