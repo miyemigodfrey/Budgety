@@ -50,6 +50,7 @@ function SourcesIdPage() {
 				setLoading(false);
 			}
 		};
+
 		fetchData();
 	}, [id, period]);
 
