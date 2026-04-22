@@ -69,7 +69,25 @@ export const getSourceById = async (id: string): Promise<SourceId> => {
 	return res.data;
 };
 
-export const getSummary = async (id: string): Promise<SourceSummary> => {
-	const res = await api.get(`/sources/${id}/summary`);
+export const getSummary = async (
+	id: string,
+	period: SourceSummary["period"],
+): Promise<SourceSummary> => {
+	const res = await api.get(`/sources/${id}/summary`, {
+		params: { period },
+	});
+	return res.data;
+};
+
+export const updateSource = async (
+	id: string,
+	data: Partial<CreateSourceDto>,
+) => {
+	const res = await api.patch(`/sources/${id}`, data);
+	return res.data;
+};
+
+export const deleteSource = async (id: string) => {
+	const res = await api.delete(`/sources/${id}`);
 	return res.data;
 };

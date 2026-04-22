@@ -35,3 +35,16 @@ export const getTransactions = async (): Promise<TransactionDto[]> => {
 	console.log(res);
 	return res.data;
 };
+
+export const updateTransaction = async (
+	id: string,
+	data: createTransactionDto,
+) => {
+	const res = await api.put(`/transactions/${id}`, data);
+	return res.data;
+};
+
+export const deleteTransaction = async (id: string) => {
+	const res = await api.delete(`/transactions/${id}`);
+	return res.data;
+};

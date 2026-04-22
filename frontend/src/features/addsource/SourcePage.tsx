@@ -1,4 +1,4 @@
-import { ChevronRight, Edit, Settings, Wallet } from "lucide-react";
+import { ChevronRight, Edit, Settings, Trash2, Wallet } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OutflowOverviewChart } from "@/components/charts/OutflowChart";
 import { TransferOverviewChart } from "@/components/charts/TransferChart";
@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import AddSourceModal from "./sourceModal";
 import AddTransactionModal from "../transactions/transactionModal";
-import { getSources, type SourceDto } from "@/api/sources";
+import { getSources, type SourceDto, type SourceId } from "@/api/sources";
 import { Link } from "react-router-dom";
+import EditSourceModal from "./EditSourceModal";
 
 export default function SourcePage() {
 	const criteriaMet = false;
@@ -19,6 +20,7 @@ export default function SourcePage() {
 	const [open, setOpen] = useState(false);
 	const [transactionOpen, setTransactionOpen] = useState(false);
 	const [source, setSource] = useState<SourceDto[]>([]);
+	const [selectedSource, setSelectedSource] = useState<SourceId | null>(null);
 
 	useEffect(() => {
 		async function fetchSources() {
@@ -61,12 +63,19 @@ export default function SourcePage() {
 									</p>
 								</div>
 								<div className="flex items-center justify-between">
-									<div className="flex items-center gap-1">
+									<div className="flex items-center gap-0.5">
 										<span className="text-gray-500 text-xs md:text-sm py-3">
 											{/**initial Amount */} Initial Amount | {source.currency}
 											{source.initialBalance}
 										</span>
-										<Edit className="size-4 text-gray-500" />
+										<div className="flex items-center gap-0">
+											<Button variant="ghost" size="sm">
+												<Edit className="size-4 text-gray-500" />
+											</Button>
+											<Button variant="ghost" size="sm">
+												<Trash2 className="size-4 text-gray-500" />
+											</Button>
+										</div>
 									</div>
 
 									{/**LINK TO GO SOURCE DETAILS */}
@@ -123,6 +132,14 @@ export default function SourcePage() {
 					open={transactionOpen}
 					setOpen={setTransactionOpen}
 				/>
+
+				{selectedSource && (
+					<EditSourceModal
+						source={selectedSource}
+						onClose={() => setSelectedSource(null)}
+						onUpdated={() => {}}
+					/>
+				)}
 			</div>
 		</div>
 	);

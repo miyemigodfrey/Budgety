@@ -13,9 +13,49 @@ import { formatDate } from "@/lib/formatDate";
 function SourcesIdPage() {
 	const { id } = useParams();
 	const [data, setData] = useState<SourceId | null>(null);
-	const [period, setPeriod] = useState("monthly");
+	const [period, setPeriod] = useState<SourceSummary["period"]>("monthly");
 	const [summary, setSummary] = useState<SourceSummary | null>(null);
 	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
+
+	const getPeriodLabel = () => {
+		switch (period) {
+			case "daily":
+				return "Today";
+			case "monthly":
+				return "month";
+			case "yearly":
+				return "year";
+			default:
+				return "period";
+		}
+	};
+
+	useEffect(() => {
+		const fetchData = async () => {
+			if (!id) return;
+			setLoading(true);
+			setError(null);
+			try {
+				const [source, summaryData] = await Promise.all([
+					getSourceById(id),
+					getSummary(id, period),
+				]);
+				setData(source);
+				setSummary(summaryData);
+			} catch (err) {
+				console.error("Failed to fetch data:", err);
+				setError("Failed to load data. Please try again.");
+			} finally {
+				setLoading(false);
+			}
+		};
+		fetchData();
+	}, [id, period]);
+
+	if (loading) return <p>Loading...</p>;
+	if (error) return <p className="text-red-500">{error}</p>;
+	if (!data) return <p>No data found</p>;
 
 	const cards = [
 		{
@@ -39,54 +79,6 @@ function SourcesIdPage() {
 		},
 	];
 
-	const getPeriodLabel = () => {
-		switch (period) {
-			case "daily":
-				return "Today";
-			case "monthly":
-				return "month";
-			case "yearly":
-				return "year";
-			default:
-				return "period";
-		}
-	};
-
-	useEffect(() => {
-		const fetchSourceId = async () => {
-			try {
-				if (!id) {
-					setLoading(false);
-					return;
-				}
-				const result = await getSourceById(id);
-				setData(result);
-				console.log(result);
-			} catch (error) {
-				console.error("Failed to fetch source:", error);
-			} finally {
-				setLoading(false);
-			}
-		};
-		fetchSourceId();
-	}, [id]);
-
-	useEffect(() => {
-		const fetchSummary = async () => {
-			if (!id) return;
-			try {
-				const res = await getSummary(id);
-				setSummary(res);
-				console.log("Summary:", res);
-			} catch (error) {
-				console.error("Failed to fetch summary:", error);
-			}
-		};
-		fetchSummary();
-	}, [id]);
-
-	if (loading) return <p>Loading...</p>;
-
 	return (
 		<>
 			<div className="min-h-screen w-full flex flex-col items-center py-6 px-4">
@@ -98,7 +90,7 @@ function SourcesIdPage() {
 					</div>
 				</header>
 
-				<div className="bg-blue-700/70 rounded-t-xl p-4 mt-4 w-full  rounded-xl shadow-md">
+				<div className="bg-blue-700/70 rounded-t-xl p-4 mt-4 w-full  rounded-xl shadow-md mb-6">
 					<h3 className=" font-semibold text-white text-xl">My {data?.name}</h3>
 					<p className="text-3xl font-semibold text-white ">
 						{data?.currency}
@@ -110,26 +102,22 @@ function SourcesIdPage() {
 					</p>
 				</div>
 
+				<select
+					value={period}
+					onChange={(e) => setPeriod(e.target.value as SourceSummary["period"])}
+					className="border p-2 rounded text-sm text-gray-700 w-40 self-end mb-2">
+					<option value="daily">Daily</option>
+					<option value="monthly">Monthly</option>
+					<option value="yearly">Yearly</option>
+					<option value="all">All</option>
+				</select>
+
 				<div className="w-full max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
 					{cards.map((card, index) => (
 						<div
 							key={index}
 							className="lg:col-span-4 bg-white rounded-xl shadow-md p-5">
-							<div className="flex items-center justify-between">
-								<h3 className="text-gray-500 text-sm">{card.title}</h3>
-
-								{card.showSelect && (
-									<select
-										value={period}
-										onChange={(e) => setPeriod(e.target.value)}
-										className="border p-2 rounded">
-										<option value="daily">Daily</option>
-										<option value="monthly">Monthly</option>
-										<option value="yearly">Yearly</option>
-										<option value="all">All</option>
-									</select>
-								)}
-							</div>
+							<h3 className="text-gray-500 text-sm">{card.title}</h3>
 
 							<p className={`text-2xl font-semibold mt-2 ${card.color}`}>
 								{card.value}
