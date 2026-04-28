@@ -1,4 +1,4 @@
-import { ChevronRight, Edit, Settings, Trash2, Wallet } from "lucide-react";
+import { ChevronRight, Settings, Wallet } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OutflowOverviewChart } from "@/components/charts/OutflowChart";
 import { TransferOverviewChart } from "@/components/charts/TransferChart";
@@ -68,14 +68,6 @@ export default function SourcePage() {
 											{/**initial Amount */} Initial Amount | {source.currency}
 											{source.initialBalance}
 										</span>
-										<div className="flex items-center gap-0">
-											<Button variant="ghost" size="sm">
-												<Edit className="size-4 text-gray-500" />
-											</Button>
-											<Button variant="ghost" size="sm">
-												<Trash2 className="size-4 text-gray-500" />
-											</Button>
-										</div>
 									</div>
 
 									{/**LINK TO GO SOURCE DETAILS */}

@@ -8,6 +8,7 @@ import {
 	LogOut,
 	UserX,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,9 @@ export default function SettingPage() {
 							Manage Sources
 						</p>
 					</div>
-					<ChevronRight />
+					<Link to="/setting/sources">
+						<ChevronRight />
+					</Link>
 				</div>
 
 				<div className="bg-white w-full flex items-center justify-between rounded-xl pt-4.5 pb-2 px-1.5 space-y-2 shadow-xl ">

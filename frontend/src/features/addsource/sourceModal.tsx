@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import UniversalModal from "@/components/ui/modal";
 import { useState } from "react";
 import { createSource } from "@/api/sources";
+import { toast } from "react-toastify";
 
 type Props = {
 	open: boolean;
@@ -28,12 +29,13 @@ export default function AddSourceModal({ open, setOpen }: Props) {
 
 		try {
 			await createSource({ name: name.trim(), balance: parsedBalance });
-			alert("Source created!");
+			toast.success("Source created successfully");
 			setName("");
 			setBalance("");
 			setOpen(false);
 		} catch (error) {
-			console.error("Failed to create source:", error);
+			toast.error("Failed to create source:");
+			throw error;
 		}
 	};
 
