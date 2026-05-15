@@ -18,6 +18,12 @@ export type SourceDto = {
 	userId: string;
 };
 
+export type UpdateSourceDto = {
+	name?: string;
+	currency?: string;
+	// balance is probably not updatable after creation
+};
+
 // src/types/source.ts
 
 export type Transaction = {
@@ -79,10 +85,7 @@ export const getSummary = async (
 	return res.data;
 };
 
-export const updateSource = async (
-	id: string,
-	data: Partial<CreateSourceDto>,
-) => {
+export const updateSource = async (id: string, data: UpdateSourceDto) => {
 	const res = await api.patch(`/sources/${id}`, data);
 	return res.data;
 };

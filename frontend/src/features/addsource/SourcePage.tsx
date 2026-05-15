@@ -7,9 +7,8 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import AddSourceModal from "./sourceModal";
 import AddTransactionModal from "../transactions/transactionModal";
-import { getSources, type SourceDto, type SourceId } from "@/api/sources";
+import { getSources, type SourceDto } from "@/api/sources";
 import { Link } from "react-router-dom";
-import EditSourceModal from "./EditSourceModal";
 
 export default function SourcePage() {
 	const criteriaMet = false;
@@ -20,7 +19,6 @@ export default function SourcePage() {
 	const [open, setOpen] = useState(false);
 	const [transactionOpen, setTransactionOpen] = useState(false);
 	const [source, setSource] = useState<SourceDto[]>([]);
-	const [selectedSource, setSelectedSource] = useState<SourceId | null>(null);
 
 	useEffect(() => {
 		async function fetchSources() {
@@ -124,14 +122,6 @@ export default function SourcePage() {
 					open={transactionOpen}
 					setOpen={setTransactionOpen}
 				/>
-
-				{selectedSource && (
-					<EditSourceModal
-						source={selectedSource}
-						onClose={() => setSelectedSource(null)}
-						onUpdated={() => {}}
-					/>
-				)}
 			</div>
 		</div>
 	);

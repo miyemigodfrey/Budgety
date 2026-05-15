@@ -2,34 +2,40 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import UniversalModal from "@/components/ui/modal";
 import { useState } from "react";
-import { createSource } from "@/api/sources";
+import { createSource, type SourceId } from "@/api/sources";
 import { toast } from "react-toastify";
 
 type Props = {
 	open: boolean;
 	setOpen: (value: boolean) => void;
+	onCreated?: (data: SourceId) => void;
 };
 
-export default function AddSourceModal({ open, setOpen }: Props) {
+export default function AddSourceModal({ open, setOpen, onCreated }: Props) {
 	const [name, setName] = useState("");
 	const [balance, setBalance] = useState("");
 
 	const handleSubmit = async () => {
 		if (!name.trim()) {
-			alert("Please enter a source name.");
+			toast.error("Please enter a source name.");
 			return;
 		}
 
 		const parsedBalance = Number(balance);
 
 		if (Number.isNaN(parsedBalance) || parsedBalance < 0) {
-			alert("Please enter a valid opening balance.");
+			toast.error("Please enter a valid opening balance.");
 			return;
 		}
 
 		try {
-			await createSource({ name: name.trim(), balance: parsedBalance });
+			const created = await createSource({
+				name: name.trim(),
+				balance: parsedBalance,
+			});
+
 			toast.success("Source created successfully");
+			onCreated?.(created);
 			setName("");
 			setBalance("");
 			setOpen(false);
