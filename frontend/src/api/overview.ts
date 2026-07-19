@@ -19,6 +19,5 @@ export type TransactionOverviewDto = {
 export const getTransactionOverview =
 	async (): Promise<TransactionOverviewDto> => {
 		const res = await api.get("/dashboard");
-		console.log(res);
 		return res.data;
 	};

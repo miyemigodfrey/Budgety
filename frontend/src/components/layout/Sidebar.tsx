@@ -1,55 +1,39 @@
 import Budgety from "@/assets/budgety.png";
-import {
-	ArrowLeftRight,
-	FileText,
-	House,
-	Printer,
-	Settings,
-} from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-
-const menus = [
-	{ id: 1, url: "/", icon: House, label: "Home" },
-	{ id: 2, url: "/source", icon: Printer, label: "Sources" },
-	{
-		id: 3,
-		url: "/transaction",
-		icon: ArrowLeftRight,
-		label: "transaction",
-	},
-	{ id: 4, url: "/report", icon: FileText, label: "Report" },
-	{ id: 5, url: "/setting", icon: Settings, label: "Settings" },
-];
+import { cn } from "@/lib/utils";
+import { isNavItemActive, navItems } from "@/lib/navItems";
 
 export default function Sidebar() {
 	const location = useLocation();
 
 	return (
-		<div className="w-64 h-screen bg-white text-blue-500 p-6">
+		<div className="w-full h-full bg-card text-brand">
 			{/* Logo */}
 			<div className="flex items-start mb-2">
 				<img src={Budgety} alt="Budgety Logo" className="h-24 w-auto" />
 			</div>
 
 			{/* Menu */}
-			<div className="flex flex-col gap-2">
-				{menus.map((menu) => {
-					const Icon = menu.icon;
-					const isActive = location.pathname === menu.url;
+			<nav className="flex flex-col gap-2">
+				{navItems.map((item) => {
+					const Icon = item.icon;
+					const isActive = isNavItemActive(location.pathname, item);
 
 					return (
 						<Link
-							key={menu.id}
-							to={menu.url}
-							className={`flex w-full items-center gap-3 px-4 py-3 rounded-lg transition
-                ${isActive ? "bg-blue-500 text-white" : "hover:bg-blue-200"}
-              `}>
+							key={item.id}
+							to={item.url}
+							aria-current={isActive ? "page" : undefined}
+							className={cn(
+								"flex w-full items-center gap-3 px-4 py-3 rounded-lg transition",
+								isActive ? "bg-brand text-brand-foreground" : "hover:bg-muted",
+							)}>
 							<Icon size={18} />
-							<span>{menu.label}</span>
+							<span>{item.label}</span>
 						</Link>
 					);
 				})}
-			</div>
+			</nav>
 		</div>
 	);
 }

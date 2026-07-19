@@ -11,10 +11,14 @@ import {
 import UniversalModal from "@/components/ui/modal";
 import { createTransaction } from "@/api/transaction";
 import { getSources } from "@/api/sources";
+import { getCategories, type Category } from "@/api/categories";
+import { toast } from "react-toastify";
+import { getErrorMessage } from "@/lib/apiError";
 
 type Props = {
 	open: boolean;
 	setOpen: (value: boolean) => void;
+	onCreated?: () => void;
 };
 
 type Source = {
@@ -24,31 +28,23 @@ type Source = {
 };
 
 type TransactionType = "inflow" | "outflow" | "transfer";
-type CategoryType = "income" | "expense";
 
-const categories = [
-	{ name: "Salary", type: "income" as CategoryType },
-	{ name: "Freelance", type: "income" as CategoryType },
-	{ name: "Investment Returns", type: "income" as CategoryType },
-	{ name: "Food & Groceries", type: "expense" as CategoryType },
-	{ name: "Transport", type: "expense" as CategoryType },
-	{ name: "Rent", type: "expense" as CategoryType },
-	{ name: "Utilities", type: "expense" as CategoryType },
-	{ name: "Entertainment", type: "expense" as CategoryType },
-	{ name: "Shopping", type: "expense" as CategoryType },
-	{ name: "Health", type: "expense" as CategoryType },
-];
-
-export default function AddTransactionModal({ open, setOpen }: Props) {
+export default function AddTransactionModal({
+	open,
+	setOpen,
+	onCreated,
+}: Props) {
 	const [activeTab, setActiveTab] = useState<TransactionType>("inflow");
 	const [amount, setAmount] = useState("");
 	const [category, setCategory] = useState("");
 	const [sources, setSources] = useState<Source[]>([]);
+	const [categories, setCategories] = useState<Category[]>([]);
 	const [source, setSource] = useState("");
 	const [note, setNote] = useState("");
 	const [transferTarget, setTransferTarget] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isLoadingSources, setIsLoadingSources] = useState(false);
+	const [isLoadingCategories, setIsLoadingCategories] = useState(false);
 
 	const tabs: { label: string; value: TransactionType }[] = [
 		{ label: "Inflow", value: "inflow" },
@@ -63,14 +59,29 @@ export default function AddTransactionModal({ open, setOpen }: Props) {
 			setSources(data);
 		} catch (error) {
 			console.error("Failed to fetch sources:", error);
+			toast.error(getErrorMessage(error, "Couldn't load your sources."));
 		} finally {
 			setIsLoadingSources(false);
+		}
+	};
+
+	const fetchCategories = async () => {
+		try {
+			setIsLoadingCategories(true);
+			const data = await getCategories();
+			setCategories(data);
+		} catch (error) {
+			console.error("Failed to fetch categories:", error);
+			toast.error(getErrorMessage(error, "Couldn't load categories."));
+		} finally {
+			setIsLoadingCategories(false);
 		}
 	};
 
 	useEffect(() => {
 		if (open) {
 			fetchSources();
+			fetchCategories();
 		}
 	}, [open]);
 
@@ -80,10 +91,12 @@ export default function AddTransactionModal({ open, setOpen }: Props) {
 	}, [activeTab]);
 
 	const filteredCategories = useMemo(() => {
+		// A transfer is neither income nor expense, so don't narrow the list.
+		if (activeTab === "transfer") return categories;
 		return categories.filter((cat) =>
 			activeTab === "inflow" ? cat.type === "income" : cat.type === "expense",
 		);
-	}, [activeTab]);
+	}, [activeTab, categories]);
 
 	const transferTargetOptions = useMemo(() => {
 		return sources.filter((src) => src.id !== source);
@@ -102,22 +115,22 @@ export default function AddTransactionModal({ open, setOpen }: Props) {
 		const parsedAmount = Number(amount);
 
 		if (!source || !category || !amount) {
-			alert("Please fill all required fields.");
+			toast.error("Please fill all required fields.");
 			return;
 		}
 
 		if (Number.isNaN(parsedAmount) || parsedAmount < 0.01) {
-			alert("Amount must be at least 0.01.");
+			toast.error("Amount must be at least 0.01.");
 			return;
 		}
 
 		if (activeTab === "transfer" && !transferTarget) {
-			alert("Please select a transfer target.");
+			toast.error("Please select a transfer target.");
 			return;
 		}
 
 		if (activeTab === "transfer" && source === transferTarget) {
-			alert("You cannot transfer to the same source.");
+			toast.error("You cannot transfer to the same source.");
 			return;
 		}
 
@@ -136,18 +149,13 @@ export default function AddTransactionModal({ open, setOpen }: Props) {
 				}),
 			});
 
-			alert("Transaction created!");
+			toast.success("Transaction created!");
 			resetForm();
 			setOpen(false);
-		} catch (error: any) {
+			onCreated?.();
+		} catch (error) {
 			console.error("Failed to create transaction:", error);
-
-			const message =
-				error?.response?.data?.message ||
-				error?.response?.data?.error ||
-				"Failed to create transaction";
-
-			alert(Array.isArray(message) ? message.join(", ") : message);
+			toast.error(getErrorMessage(error, "Failed to create transaction"));
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -164,32 +172,32 @@ export default function AddTransactionModal({ open, setOpen }: Props) {
 					<Button
 						onClick={handleSubmit}
 						disabled={isSubmitting}
-						className="bg-green-700/70">
+						className="bg-success/70">
 						{isSubmitting ? "Saving..." : "Save Transaction"}
 					</Button>
 				</div>
 			}>
 			<div className="space-y-2 w-full">
-				<ul className="bg-gray-300 w-full flex items-center justify-around rounded-xl p-1">
+				<ul className="bg-surface-sunken w-full flex items-center justify-around rounded-xl p-1">
 					{tabs.map((tab) => (
 						<li
 							key={tab.value}
 							onClick={() => setActiveTab(tab.value)}
 							className={`cursor-pointer px-4 py-1 rounded-lg text-sm font-medium transition-all duration-300 ease-in-out ${
 								activeTab === tab.value
-									? "bg-white shadow text-gray-900"
-									: "text-gray-600 hover:bg-gray-200"
+									? "bg-card shadow text-foreground"
+									: "text-muted-foreground hover:bg-surface-sunken"
 							}`}>
 							{tab.label}
 						</li>
 					))}
 				</ul>
 
-				<div className="bg-white w-full flex flex-col items-start rounded-xl p-3 space-y-1">
+				<div className="bg-card w-full flex flex-col items-start rounded-xl p-3 space-y-1">
 					<div className="flex flex-col items-start py-2 space-y-2 w-full">
 						<label
 							htmlFor="amount"
-							className="text-sm font-medium text-gray-900">
+							className="text-sm font-medium text-foreground">
 							Amount
 						</label>
 						<Input
@@ -199,13 +207,13 @@ export default function AddTransactionModal({ open, setOpen }: Props) {
 							step="0.01"
 							value={amount}
 							onChange={(e) => setAmount(e.target.value)}
-							placeholder="£0.00"
-							className="placeholder:text-lg placeholder:text-gray-400 w-full"
+							placeholder="₦0.00"
+							className="placeholder:text-lg placeholder:text-muted-foreground w-full"
 						/>
 					</div>
 
 					<div className="w-full flex flex-col items-start py-2 space-y-2">
-						<label className="text-sm font-medium text-gray-900">Source</label>
+						<label className="text-sm font-medium text-foreground">Source</label>
 						<Select value={source} onValueChange={setSource}>
 							<SelectTrigger>
 								<SelectValue
@@ -225,16 +233,27 @@ export default function AddTransactionModal({ open, setOpen }: Props) {
 					</div>
 
 					<div className="flex flex-col items-start py-2 space-y-2 w-full">
-						<label className="text-sm font-medium text-gray-900">
+						<label className="text-sm font-medium text-foreground">
 							Category
 						</label>
-						<Select value={category} onValueChange={setCategory}>
-							<SelectTrigger>
-								<SelectValue placeholder="Select category" />
+						<Select
+							value={category}
+							onValueChange={setCategory}
+							disabled={filteredCategories.length === 0}>
+							<SelectTrigger className="w-full">
+								<SelectValue
+									placeholder={
+										isLoadingCategories
+											? "Loading categories..."
+											: filteredCategories.length === 0
+												? "No categories available"
+												: "Select category"
+									}
+								/>
 							</SelectTrigger>
 							<SelectContent>
 								{filteredCategories.map((cat) => (
-									<SelectItem key={cat.name} value={cat.name}>
+									<SelectItem key={cat.id} value={cat.name}>
 										{cat.name}
 									</SelectItem>
 								))}
@@ -243,18 +262,18 @@ export default function AddTransactionModal({ open, setOpen }: Props) {
 					</div>
 
 					<div className="flex flex-col items-start py-2 space-y-2 w-full">
-						<label className="text-sm font-medium text-gray-900">Notes</label>
+						<label className="text-sm font-medium text-foreground">Notes</label>
 						<Input
 							placeholder="Optional note"
 							value={note}
 							onChange={(e) => setNote(e.target.value)}
-							className="placeholder:text-lg placeholder:text-gray-400 w-full"
+							className="placeholder:text-lg placeholder:text-muted-foreground w-full"
 						/>
 					</div>
 
 					{activeTab === "transfer" && (
 						<div className="flex flex-col items-start py-2 space-y-2 w-full">
-							<label className="text-sm font-medium text-gray-900">
+							<label className="text-sm font-medium text-foreground">
 								Transfer Target
 							</label>
 							<Select value={transferTarget} onValueChange={setTransferTarget}>

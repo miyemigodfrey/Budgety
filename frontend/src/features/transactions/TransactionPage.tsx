@@ -1,10 +1,15 @@
-import { Edit, Settings, User, Wallet } from "lucide-react";
+import { User, Wallet } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { TableDemo } from "../dashboard/DashboardPage";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { TotalTransactionBarChart } from "@/components/charts/TransactionChart";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { formatDate } from "@/lib/formatDate";
+import { formatCurrency } from "@/lib/formatCurrency";
+import { EmptyState, ErrorState } from "@/components/EmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { Status } from "@/lib/status";
 
 import { getTransactions, type TransactionDto } from "@/api/transaction";
 import {
@@ -12,6 +17,7 @@ import {
 	type TransactionOverviewDto,
 } from "@/api/overview";
 import { getSources } from "@/api/sources";
+import { getSummary, type ReportSummary } from "@/api/export";
 
 type Source = {
 	id: string;
@@ -25,25 +31,50 @@ function TransactionPage() {
 	const [sources, setSources] = useState<Source[]>([]);
 	const [transactionOverview, setTransactionOverview] =
 		useState<TransactionOverviewDto | null>(null);
+	const [summary, setSummary] = useState<ReportSummary | null>(null);
+	const [status, setStatus] = useState<Status>("loading");
+
+	const [reloadKey, setReloadKey] = useState(0);
+
+	const reload = useCallback(() => {
+		setStatus("loading");
+		setReloadKey((k) => k + 1);
+	}, []);
 
 	useEffect(() => {
+		let cancelled = false;
+
 		async function fetchData() {
 			try {
-				const [transactionData, sourceData, transactionOverviewData] =
-					await Promise.all([
-						getTransactions(),
-						getSources(),
-						getTransactionOverview(),
-					]);
+				const [
+					transactionData,
+					sourceData,
+					transactionOverviewData,
+					summaryData,
+				] = await Promise.all([
+					getTransactions(),
+					getSources(),
+					getTransactionOverview(),
+					getSummary(6),
+				]);
+				if (cancelled) return;
 				setTransaction(transactionData);
 				setSources(sourceData);
 				setTransactionOverview(transactionOverviewData);
+				setSummary(summaryData);
+				setStatus("ready");
 			} catch (error) {
+				if (cancelled) return;
 				console.error("Failed to fetch data:", error);
+				setStatus("error");
 			}
 		}
+
 		fetchData();
-	}, []);
+		return () => {
+			cancelled = true;
+		};
+	}, [reloadKey]);
 
 	return (
 		<>
@@ -51,136 +82,157 @@ function TransactionPage() {
 				<header className="w-full max-w-5xl">
 					<div className="flex items-center justify-between p-2">
 						<h1 className="font-bold text-2xl">Transaction</h1>
-						<Settings className="text-gray-500 size-6" />
 					</div>
 				</header>
 
-				<div className="mt-8 w-full  bg-white rounded-xl shadow-md">
-					<div className="bg-blue-700/70 rounded-t-xl p-4">
-						<h3 className=" font-semibold text-white text-xl">Total Initial</h3>
-						<p className="text-3xl font-semibold text-white ">
-							{transactionOverview?.totalInitialBalance}
+				<div className="mt-8 w-full  bg-card rounded-xl shadow-md">
+					<div className="bg-brand-emphasis rounded-t-xl p-4">
+						<h3 className=" font-semibold text-brand-foreground text-xl">Total Initial</h3>
+						<p className="text-3xl font-semibold text-brand-foreground ">
+							{formatCurrency(transactionOverview?.totalInitialBalance)}
 						</p>
 					</div>
 					<TableDemo />
 				</div>
 
 				<div className="w-full max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
-					<div className="lg:col-span-4 bg-white rounded-xl shadow-md p-5">
-						<h3 className="text-gray-500 text-sm">Total Balance</h3>
+					<div className="lg:col-span-4 bg-card rounded-xl shadow-md p-5">
+						<h3 className="text-muted-foreground text-sm">Total Balance</h3>
 						<p className="text-3xl font-bold mt-2">
-							£{transactionOverview?.totalBalance}
+							{formatCurrency(transactionOverview?.totalBalance)}
 						</p>
-						<p className="text-sm text-gray-500 mt-1">Across all sources</p>
+						<p className="text-sm text-muted-foreground mt-1">Across all sources</p>
 					</div>
 
 					{/* INFLOW SUMMARY */}
-					<div className="lg:col-span-4 bg-white rounded-xl shadow-md p-5">
-						<h3 className="text-gray-500 text-sm">Total Inflow</h3>
-						<p className="text-2xl font-semibold text-green-700 mt-2">
-							+£{transactionOverview?.monthly.inflow}
+					<div className="lg:col-span-4 bg-card rounded-xl shadow-md p-5">
+						<h3 className="text-muted-foreground text-sm">Total Inflow</h3>
+						<p className="text-2xl font-semibold text-success mt-2">
+							+{formatCurrency(transactionOverview?.monthly.inflow)}
 						</p>
-						<p className="text-sm text-gray-500 mt-1">This month</p>
+						<p className="text-sm text-muted-foreground mt-1">This month</p>
 					</div>
 
 					{/* OUTFLOW SUMMARY */}
-					<div className="lg:col-span-4 bg-white rounded-xl shadow-md p-5">
-						<h3 className="text-gray-500 text-sm">Total Outflow</h3>
-						<p className="text-2xl font-semibold text-red-700 mt-2">
-							-£ {transactionOverview?.monthly.outflow}
+					<div className="lg:col-span-4 bg-card rounded-xl shadow-md p-5">
+						<h3 className="text-muted-foreground text-sm">Total Outflow</h3>
+						<p className="text-2xl font-semibold text-danger mt-2">
+							-{formatCurrency(transactionOverview?.monthly.outflow)}
 						</p>
-						<p className="text-sm text-gray-500 mt-1">This month</p>
+						<p className="text-sm text-muted-foreground mt-1">This month</p>
 					</div>
 				</div>
 
 				<div className="w-full grid grid-cols-1 lg:grid-cols-5 gap-6 items-start mt-6">
 					{/* LEFT SECTION */}
 					<div className="lg:col-span-2 w-full">
-						<div className="w-full bg-white rounded-xl shadow-md">
-							<h2 className="p-4 font-semibold text-gray-700">
+						<div className="w-full bg-card rounded-xl shadow-md">
+							<h2 className="p-4 font-semibold text-foreground">
 								Recent Transactions
 							</h2>
 
-							<div className="overflow-y-scroll h-125">
+							{status === "loading" && (
+								<div className="px-4 pb-4 space-y-3">
+									{[0, 1, 2, 3].map((i) => (
+										<Skeleton key={i} className="w-full h-16" />
+									))}
+								</div>
+							)}
+
+							{status === "error" && (
+								<div className="px-4 pb-4">
+									<ErrorState
+										message="Couldn't load your transactions."
+										onRetry={reload}
+									/>
+								</div>
+							)}
+
+							{status === "ready" && transactions.length === 0 && (
+								<div className="px-4 pb-4">
+									<EmptyState
+										icon={Wallet}
+										title="No transactions yet"
+										description="Record an inflow, outflow or transfer and it'll show up here."
+									/>
+								</div>
+							)}
+
+							<ul className="overflow-y-auto max-h-125">
 								{transactions.map((transaction) => {
 									const source = sources.find(
 										(src) => src.id === transaction.sourceId,
 									);
+									const isInflow = transaction.type === "inflow";
 									return (
-										<ul key={transaction.id} className="px-4">
-											<li
-												className={
-													`pb-4 pt-2 border-b border-gray-200 flex items-start justify-between gap-3 ` +
-													(transaction.type === "inflow"
-														? " text-green-700"
-														: " text-red-700")
-												}>
-												<div className="flex items-start gap-3">
-													<div
-														className={
-															`flex items-center justify-center w-10 h-10 rounded-full bg-green-200"` +
-															(transaction.type === "inflow"
-																? " bg-green-200  "
-																: " bg-red-200")
-														}>
-														<Wallet className=" w-5 h-5" />
-													</div>
-
-													<div className="space-y-1">
-														<p className="font-semibold text-gray-700 text-sm md:text-base">
-															{source?.name || "Unknown Source"}
-														</p>
-
-														<p className="text-xs md:text-sm text-gray-500">
-															Added on {formatDate(transaction.createdAt)}
-														</p>
-
-														<div className="flex items-center gap-2.5">
-															<span className="inline-block font-semibold text-xs md:text-sm text-gray-700 bg-gray-200 px-3 py-1 rounded-full">
-																Opay
-															</span>
-															<span
-																className={
-																	`"inline-block font-semibold text-xs md:text-sm bg-gray-200 border px-3 py-1 rounded-full` +
-																	(transaction.type === "inflow"
-																		? " bg-green-200 border-green-500"
-																		: " bg-red-200  border-red-500")
-																}>
-																{transaction.type}
-															</span>
-														</div>
-													</div>
+										<li
+											key={transaction.id}
+											className={cn(
+												"mx-4 pb-4 pt-2 border-b border-border flex items-start justify-between gap-3",
+												isInflow ? "text-success" : "text-danger",
+											)}>
+											<div className="flex items-start gap-3">
+												<div
+													className={cn(
+														"flex items-center justify-center w-10 h-10 rounded-full",
+														isInflow ? "bg-success-surface" : "bg-danger-surface",
+													)}>
+													<Wallet className=" w-5 h-5" />
 												</div>
 
-												<p className="font-semibold text-sm md:text-base whitespace-nowrap">
-													{transaction.amount}
-												</p>
-											</li>
-										</ul>
+												<div className="space-y-1">
+													<p className="font-semibold text-foreground text-sm md:text-base">
+														{source?.name || "Unknown Source"}
+													</p>
+
+													<p className="text-xs md:text-sm text-muted-foreground">
+														Added on {formatDate(transaction.createdAt)}
+													</p>
+
+													<div className="flex items-center gap-2.5">
+														{transaction.category && (
+															<span className="inline-block font-semibold text-xs md:text-sm text-foreground bg-surface-sunken px-3 py-1 rounded-full">
+																{transaction.category}
+															</span>
+														)}
+														<span
+															className={cn(
+																"inline-block font-semibold text-xs md:text-sm border px-3 py-1 rounded-full",
+																isInflow
+																	? "bg-success-surface border-success"
+																	: "bg-danger-surface border-danger",
+															)}>
+															{transaction.type}
+														</span>
+													</div>
+												</div>
+											</div>
+
+											<p className="font-semibold text-sm md:text-base whitespace-nowrap">
+												{formatCurrency(transaction.amount)}
+											</p>
+										</li>
 									);
 								})}
-							</div>
+							</ul>
 						</div>
 
 						{/* Buttons */}
-						<div className="flex items-center justify-between mt-4 w-full">
-							<Button variant="primary">
-								<Edit size={16} className="text-gray-50" />
-								<span className="text-gray-50">Edit Source</span>
-							</Button>
-
+						<div className="flex items-center justify-end mt-4 w-full">
 							<Button
 								variant="primary"
 								onClick={() => navigate("/reconcilation")}>
-								<User size={16} className="text-gray-50" />
-								<span className="text-gray-50">Reconcile</span>
+								<User size={16} className="text-brand-foreground" />
+								<span className="text-brand-foreground">Reconcile</span>
 							</Button>
 						</div>
 					</div>
 
 					{/* RIGHT SECTION */}
 					<div className="hidden md:block lg:col-span-3 w-full h-full">
-						<TotalTransactionBarChart />
+						<TotalTransactionBarChart
+							series={summary?.charts.totalTransactionsSeries}
+						/>
 					</div>
 				</div>
 			</div>
