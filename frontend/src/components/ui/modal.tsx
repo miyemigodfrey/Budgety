@@ -7,7 +7,9 @@ import {
 	DialogTitle,
 	DialogDescription,
 	DialogFooter,
+	DialogClose,
 } from "@/components/ui/dialog";
+import { ArrowLeft } from "lucide-react";
 
 type Props = {
 	open?: boolean;
@@ -35,6 +37,9 @@ export default function UniversalModal({
 			{trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
 
 			<DialogContent
+				// The default close button is absolutely positioned and collides
+				// with the title, so we render our own inline in the header row.
+				showCloseButton={false}
 				className={`
 					w-full
 					h-full
@@ -45,15 +50,29 @@ export default function UniversalModal({
 					sm:my-16
 					p-6
 					border
-					border-gray-100
+					border-border
 					flex
 					flex-col
-					bg-gray-200
+					bg-surface-sunken
 					${className}
 				`}>
-				<DialogHeader>
-					{title && <DialogTitle>{title}</DialogTitle>}
-					{description && <DialogDescription>{description}</DialogDescription>}
+				<DialogHeader className="space-y-0">
+					<div className="flex items-start gap-3">
+						<DialogClose
+							aria-label="Close"
+							className="mt-0.5 shrink-0 rounded-md text-muted-foreground opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+							<ArrowLeft className="size-5" />
+						</DialogClose>
+
+						<div className="min-w-0 flex-1 text-left">
+							{title && <DialogTitle>{title}</DialogTitle>}
+							{description && (
+								<DialogDescription className="mt-1">
+									{description}
+								</DialogDescription>
+							)}
+						</div>
+					</div>
 				</DialogHeader>
 
 				<div className="flex-1 overflow-auto mt-6">{children}</div>
