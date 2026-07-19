@@ -53,7 +53,7 @@ export default function AddSourceModal({ open, setOpen, onCreated }: Props) {
 			description="Fill in the details to create a new source."
 			footer={
 				<div className="w-full flex flex-col gap-3">
-					<Button className="bg-green-700/70" onClick={handleSubmit}>
+					<Button className="bg-success/70" onClick={handleSubmit}>
 						Save Source
 					</Button>
 
@@ -63,8 +63,8 @@ export default function AddSourceModal({ open, setOpen, onCreated }: Props) {
 				</div>
 			}>
 			<div className="space-y-5 w-full">
-				<div className="bg-white w-full flex flex-col items-start rounded-xl p-3 space-y-2  ">
-					<label htmlFor="name" className="text-sm font-medium text-gray-900">
+				<div className="bg-card w-full flex flex-col items-start rounded-xl p-3 space-y-2  ">
+					<label htmlFor="name" className="text-sm font-medium text-foreground">
 						Source Name
 					</label>
 					<Input
@@ -75,10 +75,10 @@ export default function AddSourceModal({ open, setOpen, onCreated }: Props) {
 					/>
 				</div>
 
-				<div className="bg-white w-full flex flex-col items-start rounded-xl p-3 space-y-2 ">
+				<div className="bg-card w-full flex flex-col items-start rounded-xl p-3 space-y-2 ">
 					<label
 						htmlFor="balance"
-						className="text-sm font-medium text-gray-900">
+						className="text-sm font-medium text-foreground">
 						Opening Balance
 					</label>
 					<Input
@@ -86,7 +86,7 @@ export default function AddSourceModal({ open, setOpen, onCreated }: Props) {
 						onChange={(e) => setBalance(e.target.value)}
 						type="number"
 						placeholder="£ 0.00"
-						className="placeholder:text-gray-900 placeholder:font-semibold"
+						className="placeholder:text-foreground placeholder:font-semibold"
 					/>
 				</div>
 			</div>
