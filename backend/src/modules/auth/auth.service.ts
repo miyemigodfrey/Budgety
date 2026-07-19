@@ -9,6 +9,7 @@ import { StorageService } from '../../common/services/storage.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { IUser } from '../../common/interfaces';
+import { DEFAULT_CATEGORIES } from '../../common/constants/default-categories';
 
 @Injectable()
 export class AuthService {
@@ -33,6 +34,18 @@ export class AuthService {
     };
 
     this.storage.createUser(user);
+
+    // Give every new account the default categories, otherwise the Add
+    // Transaction form has an empty (unusable) category picker.
+    for (const cat of DEFAULT_CATEGORIES) {
+      this.storage.createCategory({
+        id: crypto.randomUUID(),
+        userId: user.id,
+        name: cat.name,
+        type: cat.type,
+      });
+    }
+
     return this.buildTokenResponse(user);
   }
 

@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { StorageService } from './storage.service';
 import { TransactionType } from '../interfaces/transaction.interface';
-import { CategoryType } from '../interfaces/category.interface';
+import { DEFAULT_CATEGORIES } from '../constants/default-categories';
 
 /**
  * Seeds the in-memory store with demo data on application startup.
@@ -45,18 +45,8 @@ export class SeedService implements OnModuleInit {
     });
 
     // ── Categories ───────────────────────────────────────────────────
-    const categories = [
-      { name: 'Salary', type: CategoryType.INCOME },
-      { name: 'Freelance', type: CategoryType.INCOME },
-      { name: 'Investment Returns', type: CategoryType.INCOME },
-      { name: 'Food & Groceries', type: CategoryType.EXPENSE },
-      { name: 'Transport', type: CategoryType.EXPENSE },
-      { name: 'Rent', type: CategoryType.EXPENSE },
-      { name: 'Utilities', type: CategoryType.EXPENSE },
-      { name: 'Entertainment', type: CategoryType.EXPENSE },
-      { name: 'Shopping', type: CategoryType.EXPENSE },
-      { name: 'Health', type: CategoryType.EXPENSE },
-    ];
+    // Shared with the registration flow so the two can't drift apart.
+    const categories = DEFAULT_CATEGORIES;
 
     for (const cat of categories) {
       this.storage.createCategory({
