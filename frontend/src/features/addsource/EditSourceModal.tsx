@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import UniversalModal from "@/components/ui/modal";
 import { updateSource, type SourceId } from "@/api/sources";
 import { toast } from "react-toastify";
-import axios from "axios";
+import { getErrorMessage } from "@/lib/apiError";
 
 // EditSourceModal.tsx
 type Props = {
@@ -21,7 +21,14 @@ export default function EditSourceModal({
 	onUpdated,
 }: Props) {
 	const [name, setName] = useState(source.name);
-	const [balance, setBalance] = useState(String(source.balance));
+	const [balance, setBalance] = useState(String(source.balance ?? 0));
+	const [isSaving, setIsSaving] = useState(false);
+
+	// Re-sync when a different source is opened in the same modal instance.
+	useEffect(() => {
+		setName(source.name);
+		setBalance(String(source.balance ?? 0));
+	}, [source]);
 
 	const handleUpdate = async () => {
 		if (!name.trim()) {
@@ -30,26 +37,30 @@ export default function EditSourceModal({
 		}
 
 		const parsedBalance = Number(balance);
-
-		if (Number.isNaN(parsedBalance) || parsedBalance < 0) {
-			toast.error("Please enter a valid opening balance.");
+		if (balance.trim() === "" || Number.isNaN(parsedBalance)) {
+			toast.error("Please enter a valid balance.");
+			return;
+		}
+		if (parsedBalance < 0) {
+			toast.error("Balance can't be negative.");
 			return;
 		}
 
 		try {
+			setIsSaving(true);
 			const updated = await updateSource(source.id, {
 				name: name.trim(),
+				balance: parsedBalance,
 			});
 
 			toast.success("Source updated successfully");
 			onUpdated(updated);
 			setOpen(false);
 		} catch (error) {
-			if (axios.isAxiosError(error)) {
-				// Access error.response, error.request, etc. safely
-				console.log(error.response?.status);
-			}
-			toast.error("Failed to update source");
+			console.error("Failed to update source:", error);
+			toast.error(getErrorMessage(error, "Failed to update source"));
+		} finally {
+			setIsSaving(false);
 		}
 	};
 
@@ -61,8 +72,11 @@ export default function EditSourceModal({
 			description="Update the source details below."
 			footer={
 				<div className="w-full flex flex-col gap-3">
-					<Button className="bg-green-700/70" onClick={handleUpdate}>
-						Save Changes
+					<Button
+						className="bg-success/70"
+						disabled={isSaving}
+						onClick={handleUpdate}>
+						{isSaving ? "Saving..." : "Save Changes"}
 					</Button>
 
 					<Button variant="ghost" onClick={() => setOpen(false)}>
@@ -71,8 +85,8 @@ export default function EditSourceModal({
 				</div>
 			}>
 			<div className="space-y-5 w-full">
-				<div className="bg-white w-full flex flex-col items-start rounded-xl p-3 space-y-2">
-					<label htmlFor="name" className="text-sm font-medium text-gray-900">
+				<div className="bg-card w-full flex flex-col items-start rounded-xl p-3 space-y-2">
+					<label htmlFor="name" className="text-sm font-medium text-foreground">
 						Source Name
 					</label>
 					<Input
@@ -83,19 +97,26 @@ export default function EditSourceModal({
 					/>
 				</div>
 
-				<div className="bg-white w-full flex flex-col items-start rounded-xl p-3 space-y-2">
+				<div className="bg-card w-full flex flex-col items-start rounded-xl p-3 space-y-2">
 					<label
 						htmlFor="balance"
-						className="text-sm font-medium text-gray-900">
-						Opening Balance
+						className="text-sm font-medium text-foreground">
+						Current Balance
 					</label>
 					<Input
+						id="balance"
+						type="number"
+						min="0"
+						step="0.01"
 						value={balance}
 						onChange={(e) => setBalance(e.target.value)}
-						type="number"
-						placeholder="£ 0.00"
-						className="placeholder:text-gray-900 placeholder:font-semibold"
+						placeholder="0.00"
+						className="placeholder:text-foreground placeholder:font-semibold"
 					/>
+					<p className="text-xs text-muted-foreground">
+						Corrects the balance directly. Your transaction history is left
+						unchanged.
+					</p>
 				</div>
 			</div>
 		</UniversalModal>

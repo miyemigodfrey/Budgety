@@ -5,6 +5,9 @@ import { deleteSource, getSources, type SourceId } from "@/api/sources";
 import { toast } from "react-toastify";
 import EditSourceModal from "../addsource/EditSourceModal";
 import AddSourceModal from "../addsource/sourceModal";
+import { formatDate } from "@/lib/formatDate";
+import { EmptyState } from "@/components/EmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ManageSourcePage() {
 	const [source, setSource] = useState<SourceId[]>([]);
@@ -58,29 +61,48 @@ export default function ManageSourcePage() {
 			<header className="w-full max-w-5xl">
 				<div className="flex flex-col space-y-1 p-2">
 					<h1 className="font-bold text-2xl">Manage Your Source</h1>
-					<p className="text-sm text-gray-500">
+					<p className="text-sm text-muted-foreground">
 						Manage and monitor your connected data sources
 					</p>
 				</div>
 			</header>
 
 			{loading ? (
-				<p>Loading...</p>
+				<div className="w-full mt-8 space-y-2.5">
+					{[0, 1, 2].map((i) => (
+						<Skeleton key={i} className="w-full h-28 rounded-xl" />
+					))}
+				</div>
+			) : source.length === 0 ? (
+				<div className="w-full mt-8">
+					<EmptyState
+						icon={Wallet}
+						title="No sources to manage"
+						description="Once you add a money source it'll appear here for editing."
+						action={
+							<Button onClick={() => setAddOpen(true)} variant="primary">
+								Add a source
+							</Button>
+						}
+					/>
+				</div>
 			) : (
 				<div className=" w-full flex flex-col lg:flex-row items-start gap-4 mt-8">
 					<div className=" w-full">
-						{source.map((source) => (
-							<ul key={source.id} className=" w-full">
-								<li className="mt-2.5 w-full bg-white rounded-xl shadow-md p-3 border border-gray-200 divide-y divide-gray-300">
+						<ul className="w-full">
+							{source.map((source) => (
+								<li
+									key={source.id}
+									className="mt-2.5 w-full bg-card rounded-xl shadow-md p-3 border border-border divide-y divide-border">
 									<div className=" flex items-center justify-between py-2">
 										<div className="flex items-center space-x-2">
-											<Wallet className="text-green-700 size-4.5" />
+											<Wallet className="text-success size-4.5" />
 											<p className="font-semibold">{source.name}</p>
 										</div>
 
-										<div className="flex items-center justify-center gap-1 bg-green-300/50 px-2 py-1 rounded-md">
-											<div className="bg-green-600 size-1.5 rounded-full"></div>
-											<p className="text-sm md:text-md text-green-700 font-semibold">
+										<div className="flex items-center justify-center gap-1 bg-success-surface px-2 py-1 rounded-md">
+											<div className="bg-success size-1.5 rounded-full"></div>
+											<p className="text-sm md:text-md text-success font-semibold">
 												Active
 											</p>
 										</div>
@@ -88,9 +110,9 @@ export default function ManageSourcePage() {
 
 									<div className="pt-2 flex flex-col md:flex-row justify-between gap-2">
 										<div className="flex items-center gap-2">
-											<Clock className="size-4 text-gray-500" />
-											<span className="text-sm font-semibold text-gray-500">
-												5 Hours Ago
+											<Clock className="size-4 text-muted-foreground" />
+											<span className="text-sm font-semibold text-muted-foreground">
+												Updated {formatDate(source.updatedAt)}
 											</span>
 										</div>
 										<div className="flex items-start justify-end gap-2 pt-2">
@@ -98,29 +120,29 @@ export default function ManageSourcePage() {
 												variant="ghost"
 												size="sm"
 												onClick={() => handleEditClick(source)}
-												className="p-1 border border-gray-300 hover:bg-gray-100">
-												<Edit className="size-4 text-gray-500" />
+												className="p-1 border border-border hover:bg-muted">
+												<Edit className="size-4 text-muted-foreground" />
 												Edit
 											</Button>
 											<Button
 												variant="ghost"
 												onClick={() => handleDelete(source.id)}
 												size="sm"
-												className="p-1 border text-red-600 border-red-300 hover:bg-gray-100">
-												<Trash2 className="size-4 text-red-600" />
+												className="p-1 border text-danger border-danger/50 hover:bg-muted">
+												<Trash2 className="size-4 text-danger" />
 												Delete
 											</Button>
 										</div>
 									</div>
 								</li>
-							</ul>
-						))}
+							))}
+						</ul>
 
 						<div className="flex items-center justify-between gap-2 mt-4">
 							<Button
 								onClick={() => setAddOpen(true)}
 								variant="outline"
-								className="border-gray-300 shadow-xl py-5 px-10 hover:bg-green-700/70 hover:text-gray-200 hover:border-green-700 ">
+								className="border-border shadow-xl py-5 px-10 hover:bg-success/70 hover:text-brand-foreground hover:border-success ">
 								Add Source
 							</Button>
 						</div>
