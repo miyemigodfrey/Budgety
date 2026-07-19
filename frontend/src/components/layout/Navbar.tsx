@@ -1,51 +1,37 @@
-import {
-	FileText,
-	House,
-	ArrowLeftRight,
-	Printer,
-	Settings,
-} from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-const menus = [
-	{ id: 1, url: "/", icon: House, label: "Home" },
-	{ id: 2, url: "/source", icon: Printer, label: "Sources" },
-	{
-		id: 3,
-		url: "/transaction",
-		icon: ArrowLeftRight,
-		label: "transaction",
-	},
-	{ id: 4, url: "/report", icon: FileText, label: "Report" },
-	{ id: 5, url: "/setting", icon: Settings, label: "Settings" },
-];
+import { cn } from "@/lib/utils";
+import { isNavItemActive, navItems } from "@/lib/navItems";
 
 export default function Navbar() {
 	const location = useLocation();
 
 	return (
-		<nav className="fixed bottom-0 left-0 right-0 md:hidden bg-white border-t border-gray-200 shadow-md pb-3 pt-1.5">
-			<Tabs value={location.pathname} className="w-full">
-				<TabsList
-					variant="line"
-					className="max-w-4xl mx-auto flex items-center justify-around p-2 bg-transparent w-full">
-					{menus.map((menu) => {
-						const Icon = menu.icon;
+		<nav className="fixed bottom-0 left-0 right-0 md:hidden bg-card border-t border-border shadow-md pb-3 pt-1.5">
+			{/* Six items don't fit a phone width, so the bar scrolls sideways
+			    instead of clipping the last item out of reach. */}
+			<ul className="flex items-center gap-1 overflow-x-auto scroll-smooth px-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+				{navItems.map((item) => {
+					const Icon = item.icon;
+					const isActive = isNavItemActive(location.pathname, item);
 
-						return (
-							<Link key={menu.id} to={menu.url} className="flex-1">
-								<TabsTrigger
-									value={menu.url}
-									className="flex flex-col items-center w-full gap-1">
-									<Icon className="size-5 text-gray-500" />
-									<span className="text-xs">{menu.label}</span>
-								</TabsTrigger>
+					return (
+						<li key={item.id} className="shrink-0">
+							<Link
+								to={item.url}
+								aria-current={isActive ? "page" : undefined}
+								className={cn(
+									"flex min-w-16 flex-col items-center gap-1 rounded-lg px-3 py-1.5 transition-colors",
+									isActive
+										? "text-brand"
+										: "text-muted-foreground hover:text-foreground",
+								)}>
+								<Icon className="size-5" />
+								<span className="text-xs whitespace-nowrap">{item.label}</span>
 							</Link>
-						);
-					})}
-				</TabsList>
-			</Tabs>
+						</li>
+					);
+				})}
+			</ul>
 		</nav>
 	);
 }
