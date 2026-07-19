@@ -1,6 +1,8 @@
 import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
+import { useTheme } from "@/hooks/useTheme";
+import { CHART_PALETTE, CHART_SURFACE } from "@/lib/chartPalette";
 
 ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 
@@ -10,7 +12,8 @@ type DonutChartProps = {
 };
 
 export default function InflowOverviewChart({ labels, data }: DonutChartProps) {
-	const defaultColors = ["#2563EB", "#22C55E", "#F59E0B", "#8B5CF6", "#EF4444"];
+	const { theme } = useTheme();
+	const defaultColors = [...CHART_PALETTE[theme]];
 
 	const colorsForData = defaultColors
 		.slice(0, data.length)
@@ -30,7 +33,8 @@ export default function InflowOverviewChart({ labels, data }: DonutChartProps) {
 				data,
 				backgroundColor: colorsForData,
 				borderWidth: 1,
-				borderColor: "#ffffff",
+				// Matches the card behind it; a literal white ring glows in dark.
+				borderColor: CHART_SURFACE[theme],
 			},
 		],
 	};
@@ -60,7 +64,7 @@ export default function InflowOverviewChart({ labels, data }: DonutChartProps) {
 								style={{ background: colorsForData[idx] }}
 								className="w-2 h-2 rounded-sm inline-block"
 							/>
-							<span className="text-sm text-gray-700">{label}</span>
+							<span className="text-sm text-foreground">{label}</span>
 						</div>
 						<span className="text-sm font-semibold">
 							₦{(data[idx] ?? 0).toLocaleString()}
