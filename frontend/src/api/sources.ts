@@ -21,7 +21,8 @@ export type SourceDto = {
 export type UpdateSourceDto = {
 	name?: string;
 	currency?: string;
-	// balance is probably not updatable after creation
+	/** Corrects the stored balance directly; transactions are left untouched. */
+	balance?: number;
 };
 
 // src/types/source.ts
