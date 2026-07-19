@@ -18,11 +18,16 @@ A personal finance management application for tracking income, expenses, and tra
 - **Framework:** [React 19](https://react.dev/) (TypeScript)
 - **Build Tool:** [Vite 7](https://vite.dev/)
 - **Styling:** [Tailwind CSS v4](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) (Radix UI primitives)
-- **State Management:** [Zustand](https://zustand.docs.pmnd.rs/)
-- **Forms:** react-hook-form + Zod
+- **State Management:** React Context (`AuthProvider`) + local `useState`
+- **Forms:** Controlled components with `useState`
+- **HTTP:** Axios (`src/api/axios.ts`, Bearer token interceptor)
 - **Charts:** Chart.js / Recharts
 - **Icons:** Lucide React
-- **Animations:** Framer Motion
+- **Notifications:** react-toastify
+
+> **Note:** `zustand`, `zod`, and `framer-motion` are present in `package.json` but
+> are not currently imported anywhere. `react-hook-form` is used only by the
+> generated `src/components/ui/form.tsx`. Remove them or adopt them as needed.
 
 ## Prerequisites
 
@@ -84,6 +89,16 @@ Swagger API docs will be available at:
 cd frontend
 bun install
 ```
+
+Optionally create a `.env` file in the `frontend/` directory (see `.env.example`):
+
+```env
+VITE_API_URL=http://localhost:3000
+```
+
+| Variable | Default | Description |
+|---|---|---|
+| `VITE_API_URL` | `http://localhost:3000` | Base URL of the Budgety backend API |
 
 Start the frontend:
 
@@ -175,11 +190,16 @@ All endpoints except auth require a `Authorization: Bearer <token>` header.
 | POST | `/auth/register` | No | Create an account |
 | POST | `/auth/login` | No | Get JWT access token |
 | GET | `/sources` | Yes | List money sources |
+| GET | `/sources/overview` | Yes | Source cards + aggregated totals |
 | POST | `/sources` | Yes | Create a source |
 | GET | `/sources/:id` | Yes | Get source with transaction history |
-| PATCH | `/sources/:id` | Yes | Update a source |
-| DELETE | `/sources/:id` | Yes | Delete a source |
+| GET | `/sources/:id/overview` | Yes | Source detail summary + monthly stats |
+| GET | `/sources/:id/summary` | Yes | Inflow/outflow/net (`?period=daily\|monthly\|yearly\|all`) |
+| PATCH | `/sources/:id` | Yes | Update a source (name/currency/balance) |
+| DELETE | `/sources/:id` | Yes | Delete a source (and its transactions) |
 | GET | `/transactions` | Yes | List transactions (filterable) |
+| GET | `/transactions/overview` | Yes | Totals, monthly figures, recent 10 |
+| GET | `/transactions/trends` | Yes | Monthly trend series (`?months=6`) |
 | POST | `/transactions` | Yes | Create a transaction |
 | PATCH | `/transactions/:id` | Yes | Update a transaction |
 | DELETE | `/transactions/:id` | Yes | Delete a transaction |
@@ -188,21 +208,31 @@ All endpoints except auth require a `Authorization: Bearer <token>` header.
 | PATCH | `/categories/:id` | Yes | Update a category |
 | DELETE | `/categories/:id` | Yes | Delete a category |
 | GET | `/dashboard` | Yes | Financial overview |
-| POST | `/reconcile` | Yes | Submit actual balances |
+| POST | `/reconcile` | Yes | Submit actual balances (`{ entries: [{ sourceId, actualBalance }] }`) |
 | GET | `/reconcile` | Yes | View balance discrepancies |
-| GET | `/export/pdf` | Yes | Download PDF report |
+| GET | `/reconcile/source/:sourceId` | Yes | Reconciliation snapshot for one source |
+| GET | `/export/pdf` | Yes | Download PDF report (`?startDate&endDate`, required) |
+| GET | `/export/csv` | Yes | Download CSV report (`?startDate&endDate`, optional) |
+| GET | `/export/summary` | Yes | Report page summary + chart series (`?months=6`) |
+| GET | `/settings` | Yes | Get user settings |
+| PATCH | `/settings` | Yes | Update user settings |
 
 ## Frontend Routes
 
-| Path | Page |
-|---|---|
-| `/` | Dashboard |
-| `/source` | Source listing |
-| `/source/id` | Individual source details |
-| `/transaction` | Transaction listing |
-| `/report` | Reports |
-| `/reconcilation` | Reconciliation |
-| `/setting` | Settings |
+| Path | Page | Auth |
+|---|---|---|
+| `/login` | Login | No |
+| `/signup` | Sign up | No |
+| `/` | Redirects to `/login` | No |
+| `/dashboard` | Dashboard / onboarding | Yes |
+| `/source` | Source listing | Yes |
+| `/sources/:id` | Individual source details | Yes |
+| `/transaction` | Transaction listing | Yes |
+| `/report` | Reports | Yes |
+| `/reconcilation` | Reconciliation | Yes |
+| `/setting` | Settings | Yes |
+| `/setting/sources` | Manage sources | Yes |
+| `*` | Redirects to `/dashboard` | Yes |
 
 ## Available Scripts
 
