@@ -3,6 +3,7 @@ import { StorageService } from "../../common/services/storage.service";
 import { CreateSourceDto } from "./dto/create-source.dto";
 import { UpdateSourceDto } from "./dto/update-source.dto";
 import { ISource, TransactionType } from "../../common/interfaces";
+import { computeSourceStats } from "../../common/utils/balance.util";
 
 @Injectable()
 export class SourcesService {
@@ -13,7 +14,7 @@ export class SourcesService {
 		const transactions = this.storage.findTransactionsByUserId(userId);
 
 		return sources.map((source) => {
-			const stats = this.computeSourceStats(
+			const stats = computeSourceStats(
 				source.id,
 				source.balance,
 				transactions,
@@ -32,7 +33,7 @@ export class SourcesService {
 		const transactions = this.storage.findTransactionsByUserId(userId);
 
 		const sourceSummaries = sources.map((source) => {
-			const stats = this.computeSourceStats(
+			const stats = computeSourceStats(
 				source.id,
 				source.balance,
 				transactions,
@@ -87,7 +88,7 @@ export class SourcesService {
 
 		const transactions = this.storage.findTransactionsBySourceId(id, userId);
 		const allTransactions = this.storage.findTransactionsByUserId(userId);
-		const stats = this.computeSourceStats(id, source.balance, allTransactions);
+		const stats = computeSourceStats(id, source.balance, allTransactions);
 
 		return {
 			...source,
@@ -106,7 +107,7 @@ export class SourcesService {
 			.findTransactionsBySourceId(id, userId)
 			.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-		const stats = this.computeSourceStats(id, source.balance, allTransactions);
+		const stats = computeSourceStats(id, source.balance, allTransactions);
 		const sourceById = new Map(
 			this.storage
 				.findSourcesByUserId(userId)
@@ -241,70 +242,6 @@ export class SourcesService {
 		this.storage.deleteTransactionsBySourceId(id, userId);
 		const deleted = this.storage.deleteSource(id, userId);
 		if (!deleted) throw new NotFoundException("Source not found");
-	}
-
-	private computeSourceStats(
-		sourceId: string,
-		currentBalance: number,
-		transactions: Array<{
-			sourceId: string;
-			transferTargetId?: string;
-			type: TransactionType;
-			amount: number;
-			date: Date;
-		}>,
-	) {
-		const relatedTransactions = transactions.filter(
-			(tx) => tx.sourceId === sourceId || tx.transferTargetId === sourceId,
-		);
-
-		const totalInflow = relatedTransactions
-			.filter(
-				(tx) => tx.type === TransactionType.INFLOW && tx.sourceId === sourceId,
-			)
-			.reduce((sum, tx) => sum + tx.amount, 0);
-
-		const totalOutflow = relatedTransactions
-			.filter(
-				(tx) => tx.type === TransactionType.OUTFLOW && tx.sourceId === sourceId,
-			)
-			.reduce((sum, tx) => sum + tx.amount, 0);
-
-		const totalTransferOut = relatedTransactions
-			.filter(
-				(tx) =>
-					tx.type === TransactionType.TRANSFER && tx.sourceId === sourceId,
-			)
-			.reduce((sum, tx) => sum + tx.amount, 0);
-
-		const totalTransferIn = relatedTransactions
-			.filter(
-				(tx) =>
-					tx.type === TransactionType.TRANSFER &&
-					tx.transferTargetId === sourceId,
-			)
-			.reduce((sum, tx) => sum + tx.amount, 0);
-
-		const openingBalance =
-			currentBalance -
-			totalInflow +
-			totalOutflow +
-			totalTransferOut -
-			totalTransferIn;
-
-		const sortedDates = relatedTransactions
-			.map((tx) => new Date(tx.date))
-			.sort((a, b) => b.getTime() - a.getTime());
-
-		return {
-			openingBalance,
-			totalInflow,
-			totalOutflow,
-			totalTransferIn,
-			totalTransferOut,
-			transactionCount: relatedTransactions.length,
-			lastTransactionAt: sortedDates[0],
-		};
 	}
 
 	private getDateRange(period: string) {

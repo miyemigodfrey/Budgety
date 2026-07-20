@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { StorageService } from '../../common/services/storage.service';
 import { ITransaction, TransactionType } from '../../common/interfaces';
+import { computeOpeningBalance } from '../../common/utils/balance.util';
 
 @Injectable()
 export class DashboardService {
@@ -16,7 +17,7 @@ export class DashboardService {
       name: s.name,
       balance: s.balance,
       currency: s.currency,
-      openingBalance: this.computeOpeningBalance(s.id, s.balance, transactions),
+      openingBalance: computeOpeningBalance(s.id, s.balance, transactions),
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
     }));
@@ -90,39 +91,4 @@ export class DashboardService {
     };
   }
 
-  private computeOpeningBalance(
-    sourceId: string,
-    currentBalance: number,
-    transactions: ITransaction[],
-  ) {
-    const related = transactions.filter(
-      (tx) => tx.sourceId === sourceId || tx.transferTargetId === sourceId,
-    );
-
-    const inflow = related
-      .filter(
-        (tx) => tx.type === TransactionType.INFLOW && tx.sourceId === sourceId,
-      )
-      .reduce((sum, tx) => sum + tx.amount, 0);
-    const outflow = related
-      .filter(
-        (tx) => tx.type === TransactionType.OUTFLOW && tx.sourceId === sourceId,
-      )
-      .reduce((sum, tx) => sum + tx.amount, 0);
-    const transferOut = related
-      .filter(
-        (tx) =>
-          tx.type === TransactionType.TRANSFER && tx.sourceId === sourceId,
-      )
-      .reduce((sum, tx) => sum + tx.amount, 0);
-    const transferIn = related
-      .filter(
-        (tx) =>
-          tx.type === TransactionType.TRANSFER &&
-          tx.transferTargetId === sourceId,
-      )
-      .reduce((sum, tx) => sum + tx.amount, 0);
-
-    return currentBalance - inflow + outflow + transferOut - transferIn;
-  }
 }
