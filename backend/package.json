@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "build": "nest build",
+    "test": "bun test",
     "start": "bun dist/main.js",
     "start:dev": "bun --watch src/main.ts",
     "start:prod": "NODE_ENV=production bun dist/main.js"
