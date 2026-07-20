@@ -1,3 +1,5 @@
+"use client";
+
 import {
 	Settings,
 	SunMoon,
@@ -11,7 +13,7 @@ import {
 import { Link } from "react-router-dom";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuth } from "@/hooks/useAuth";
+import { signOut } from "next-auth/react";
 import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
@@ -27,7 +29,7 @@ import {
 type ToggleKey = keyof UpdateSettingsDto;
 
 export default function SettingPage() {
-	const { logout } = useAuth();
+	const logout = () => signOut({ callbackUrl: "/login" });
 	const { setTheme } = useTheme();
 	const [settings, setSettings] = useState<UserSettings | null>(null);
 

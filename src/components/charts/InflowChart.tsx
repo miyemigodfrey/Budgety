@@ -1,3 +1,5 @@
+"use client";
+
 import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
@@ -21,7 +23,7 @@ export default function InflowOverviewChart({ labels, data }: DonutChartProps) {
 			data.length > defaultColors.length
 				? Array.from(
 						{ length: data.length - defaultColors.length },
-						(_, i) => defaultColors[i % defaultColors.length],
+						(_, i) => defaultColors[i % defaultColors.length]!,
 					)
 				: [],
 		);

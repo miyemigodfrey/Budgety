@@ -1,3 +1,5 @@
+"use client";
+
 import Budgety from "@/assets/budgety.png";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -10,7 +12,7 @@ export default function Sidebar() {
 		<div className="w-full h-full bg-card text-brand">
 			{/* Logo */}
 			<div className="flex items-start mb-2">
-				<img src={Budgety} alt="Budgety Logo" className="h-24 w-auto" />
+				<img src={Budgety.src} alt="Budgety Logo" className="h-24 w-auto" />
 			</div>
 
 			{/* Menu */}

@@ -1,29 +1,23 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
-import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import ClownOne from "@/assets/Clown1.jpg";
 import { ArrowLeftCircle } from "lucide-react";
 import { useState } from "react";
-import { login } from "@/api/auth";
-import { useAuth } from "@/hooks/useAuth";
+import { signIn } from "next-auth/react";
 import { Label } from "@/components/ui/label";
 import { toast } from "react-toastify";
-import { getErrorMessage } from "@/lib/apiError";
 
 export default function LoginPage() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const navigate = useNavigate();
-	const { isAuthenticated, login: loginContext } = useAuth();
-	const location = useLocation();
+	const router = useRouter();
+	const searchParams = useSearchParams();
 
-	const from = location.state?.from?.pathname || "/dashboard";
-
-	// Redirect declaratively — calling navigate() during render triggers a
-	// "setState while rendering" warning and can loop.
-	if (isAuthenticated) {
-		return <Navigate to={from} replace />;
-	}
+	const from = searchParams.get("from") || "/dashboard";
 
 	const handleLogin = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -35,18 +29,20 @@ export default function LoginPage() {
 
 		try {
 			setIsSubmitting(true);
-			const loginData = await login({
+			const result = await signIn("credentials", {
 				email,
 				password,
+				redirect: false,
 			});
-			//navigate to the dashboard page
-			loginContext(loginData.accessToken, loginData.user);
-			navigate(from, { replace: true });
+			if (result?.error) {
+				toast.error("Login failed. Check your email and password.");
+				return;
+			}
+			router.replace(from);
+			router.refresh();
 		} catch (error) {
 			console.error("Login failed:", error);
-			toast.error(
-				getErrorMessage(error, "Login failed. Check your email and password."),
-			);
+			toast.error("Login failed. Check your email and password.");
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -55,14 +51,14 @@ export default function LoginPage() {
 	return (
 		<>
 			<div className="grid grid-cols-12 h-screen relative bg-background text-foreground">
-				<Link to="/" className="absolute z-50 top-3 right-3 ">
+				<Link href="/" className="absolute z-50 top-3 right-3 ">
 					<ArrowLeftCircle className="text-danger" />
 				</Link>
 
 				<div className="col-span-6 hidden md:block">
 					<div className="h-screen relative overflow-hidden">
 						<img
-							src={ClownOne}
+							src={ClownOne.src}
 							alt="Login i"
 							className="w-full h-full object-cover object-center"
 						/>
@@ -112,7 +108,7 @@ export default function LoginPage() {
 						<p className="text-center mt-4 text-sm">
 							Don't have an account?
 							<Link
-								to="/signup"
+								href="/signup"
 								className=" text-muted-foreground px-0.5 hover:underline">
 								Register
 							</Link>

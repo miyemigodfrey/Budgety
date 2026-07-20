@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useEffect, useMemo, useState } from "react";
@@ -21,11 +23,7 @@ type Props = {
 	onCreated?: () => void;
 };
 
-type Source = {
-	id: string;
-	name: string;
-	balance?: number;
-};
+type Source = { id: string; name: string };
 
 type TransactionType = "inflow" | "outflow" | "transfer";
 
@@ -143,7 +141,7 @@ export default function AddTransactionModal({
 				amount: parsedAmount,
 				category,
 				note,
-				date: new Date().toISOString().split("T")[0],
+				date: new Date().toISOString().split("T")[0]!,
 				...(activeTab === "transfer" && {
 					transferTargetId: transferTarget,
 				}),
