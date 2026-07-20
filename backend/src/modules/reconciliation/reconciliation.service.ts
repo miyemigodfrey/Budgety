@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { StorageService } from '../../common/services/storage.service';
 import { ReconcileDto } from './dto/reconcile.dto';
 import { IReconciliation } from '../../common/interfaces';
+import { computeOpeningBalance } from '../../common/utils/balance.util';
 
 @Injectable()
 export class ReconciliationService {
@@ -69,10 +70,10 @@ export class ReconciliationService {
           new Date(a.reconciledAt).getTime(),
       )[0];
 
-    const openingBalance = this.computeOpeningBalance(
+    const openingBalance = computeOpeningBalance(
       sourceId,
-      userId,
       source.balance,
+      this.storage.findTransactionsByUserId(userId),
     );
 
     return {
@@ -88,32 +89,4 @@ export class ReconciliationService {
     };
   }
 
-  private computeOpeningBalance(
-    sourceId: string,
-    userId: string,
-    currentBalance: number,
-  ) {
-    const transactions = this.storage
-      .findTransactionsByUserId(userId)
-      .filter((tx) => {
-        return tx.sourceId === sourceId || tx.transferTargetId === sourceId;
-      });
-
-    const inflow = transactions
-      .filter((tx) => tx.type === 'inflow' && tx.sourceId === sourceId)
-      .reduce((sum, tx) => sum + tx.amount, 0);
-    const outflow = transactions
-      .filter((tx) => tx.type === 'outflow' && tx.sourceId === sourceId)
-      .reduce((sum, tx) => sum + tx.amount, 0);
-    const transferOut = transactions
-      .filter((tx) => tx.type === 'transfer' && tx.sourceId === sourceId)
-      .reduce((sum, tx) => sum + tx.amount, 0);
-    const transferIn = transactions
-      .filter(
-        (tx) => tx.type === 'transfer' && tx.transferTargetId === sourceId,
-      )
-      .reduce((sum, tx) => sum + tx.amount, 0);
-
-    return currentBalance - inflow + outflow + transferOut - transferIn;
-  }
 }

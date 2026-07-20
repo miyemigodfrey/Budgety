@@ -7,6 +7,7 @@ import { StorageService } from '../../common/services/storage.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { ITransaction, TransactionType } from '../../common/interfaces';
+import { computeOpeningBalance } from '../../common/utils/balance.util';
 
 @Injectable()
 export class TransactionsService {
@@ -34,7 +35,7 @@ export class TransactionsService {
     const totalInitialBalance = sources.reduce(
       (sum, source) =>
         sum +
-        this.computeOpeningBalance(source.id, source.balance, transactions),
+        computeOpeningBalance(source.id, source.balance, transactions),
       0,
     );
 
@@ -456,42 +457,6 @@ export class TransactionsService {
 
   private getBalance(sourceId: string, userId: string): number {
     return this.storage.findSourceById(sourceId, userId)?.balance ?? 0;
-  }
-
-  private computeOpeningBalance(
-    sourceId: string,
-    currentBalance: number,
-    transactions: ITransaction[],
-  ): number {
-    const related = transactions.filter(
-      (tx) => tx.sourceId === sourceId || tx.transferTargetId === sourceId,
-    );
-
-    const inflow = related
-      .filter(
-        (tx) => tx.type === TransactionType.INFLOW && tx.sourceId === sourceId,
-      )
-      .reduce((sum, tx) => sum + tx.amount, 0);
-    const outflow = related
-      .filter(
-        (tx) => tx.type === TransactionType.OUTFLOW && tx.sourceId === sourceId,
-      )
-      .reduce((sum, tx) => sum + tx.amount, 0);
-    const transferOut = related
-      .filter(
-        (tx) =>
-          tx.type === TransactionType.TRANSFER && tx.sourceId === sourceId,
-      )
-      .reduce((sum, tx) => sum + tx.amount, 0);
-    const transferIn = related
-      .filter(
-        (tx) =>
-          tx.type === TransactionType.TRANSFER &&
-          tx.transferTargetId === sourceId,
-      )
-      .reduce((sum, tx) => sum + tx.amount, 0);
-
-    return currentBalance - inflow + outflow + transferOut - transferIn;
   }
 
   private getMonthWindows(months: number) {
