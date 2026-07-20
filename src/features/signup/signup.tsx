@@ -1,9 +1,13 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import ClownTwo from "@/assets/Clown2.jpg";
 import { ArrowLeftCircle } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { signIn } from "next-auth/react";
+import { trpc } from "@/api/client";
 import { Label } from "@/components/ui/label";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "@/lib/apiError";
@@ -15,15 +19,7 @@ export default function SignupPage() {
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [passwordError, setPasswordError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const { isAuthenticated, signup } = useAuth();
-
-	const navigate = useNavigate();
-
-	// Redirect declaratively — calling navigate() during render triggers a
-	// "setState while rendering" warning and can loop.
-	if (isAuthenticated) {
-		return <Navigate to="/dashboard" replace />;
-	}
+	const router = useRouter();
 
 	const handleSignup = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -41,18 +37,23 @@ export default function SignupPage() {
 
 		try {
 			setIsSubmitting(true);
-			await signup({
-				name,
+			// Register creates the account; then sign in to establish the session.
+			await trpc.auth.register.mutate({ name, email, password });
+			const result = await signIn("credentials", {
 				email,
 				password,
+				redirect: false,
 			});
-			toast.success("Account created. Please log in.");
-			navigate("/login", { replace: true });
+			if (result?.error) {
+				toast.success("Account created. Please log in.");
+				router.replace("/login");
+				return;
+			}
+			router.replace("/dashboard");
+			router.refresh();
 		} catch (error) {
 			console.error("Failed to signup:", error);
-			toast.error(
-				getErrorMessage(error, "Sign up failed. Please try again."),
-			);
+			toast.error(getErrorMessage(error, "Sign up failed. Please try again."));
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -61,7 +62,7 @@ export default function SignupPage() {
 	return (
 		<>
 			<div className="grid grid-cols-12 h-screen relative bg-background text-foreground">
-				<Link to="/" className="absolute z-50 top-3 left-3">
+				<Link href="/" className="absolute z-50 top-3 left-3">
 					<ArrowLeftCircle className="text-danger" />
 				</Link>
 
@@ -143,7 +144,7 @@ export default function SignupPage() {
 
 							<p className="text-center mt-4 text-sm text-muted-foreground">
 								Already have an account?
-								<Link to="/login" className="text-brand hover:underline">
+								<Link href="/login" className="text-brand hover:underline">
 									Login
 								</Link>
 							</p>
@@ -154,7 +155,7 @@ export default function SignupPage() {
 				<div className="col-span-6 hidden md:block">
 					<div className="h-screen relative overflow-hidden">
 						<img
-							src={ClownTwo}
+							src={ClownTwo.src}
 							alt="Login i"
 							className="w-full h-full object-cover object-center"
 						/>

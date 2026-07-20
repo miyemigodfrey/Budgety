@@ -1,17 +1,19 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import UniversalModal from "@/components/ui/modal";
-import { updateSource, type SourceId } from "@/api/sources";
+import { updateSource, type Source } from "@/api/sources";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "@/lib/apiError";
 
 // EditSourceModal.tsx
 type Props = {
-	source: SourceId;
+	source: Source;
 	open: boolean;
 	setOpen: (value: boolean) => void;
-	onUpdated: (data: SourceId) => void;
+	onUpdated: (data: Source) => void;
 };
 
 export default function EditSourceModal({

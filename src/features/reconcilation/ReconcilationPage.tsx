@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -60,7 +62,7 @@ export default function ReconcilationPage() {
 			const [reconciled] = await createReconciliation([
 				{ sourceId, actualBalance },
 			]);
-			setResult(reconciled);
+			if (reconciled) setResult(reconciled);
 			toast.success("Reconciliation recorded.");
 		} catch (error) {
 			console.error("Failed to reconcile:", error);
@@ -71,7 +73,7 @@ export default function ReconcilationPage() {
 	};
 
 	const currency = selectedSource?.currency;
-	const isMatched = result ? result.discrepancy === 0 : false;
+	const isMatched = result ? result.discrepancy === 0n : false;
 
 	return (
 		<div className="min-h-screen w-full mx-auto flex flex-col items-center py-6 px-4 md:px-10 md:py-10 max-w-2xl">

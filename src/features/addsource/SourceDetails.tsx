@@ -1,3 +1,5 @@
+"use client";
+
 import { ArrowLeft, Ellipsis, Wallet } from "lucide-react";
 import { TotalTransactionBarChart } from "@/components/charts/TransactionChart";
 import { useNavigate, useParams } from "react-router-dom";

@@ -1,14 +1,16 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import UniversalModal from "@/components/ui/modal";
 import { useState } from "react";
-import { createSource, type SourceId } from "@/api/sources";
+import { createSource, type Source } from "@/api/sources";
 import { toast } from "react-toastify";
 
 type Props = {
 	open: boolean;
 	setOpen: (value: boolean) => void;
-	onCreated?: (data: SourceId) => void;
+	onCreated?: (data: Source) => void;
 };
 
 export default function AddSourceModal({ open, setOpen, onCreated }: Props) {

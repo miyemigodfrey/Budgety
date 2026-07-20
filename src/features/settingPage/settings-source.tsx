@@ -1,7 +1,9 @@
+"use client";
+
 import { Clock, Edit, Trash2, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { deleteSource, getSources, type SourceId } from "@/api/sources";
+import { deleteSource, getSources, type Source } from "@/api/sources";
 import { toast } from "react-toastify";
 import EditSourceModal from "../addsource/EditSourceModal";
 import AddSourceModal from "../addsource/sourceModal";
@@ -10,19 +12,19 @@ import { EmptyState } from "@/components/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ManageSourcePage() {
-	const [source, setSource] = useState<SourceId[]>([]);
+	const [source, setSource] = useState<Source[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	const [addOpen, setAddOpen] = useState(false);
 	const [editOpen, setEditOpen] = useState(false);
-	const [selectedSource, setSelectedSource] = useState<SourceId | null>(null);
+	const [selectedSource, setSelectedSource] = useState<Source | null>(null);
 
 	useEffect(() => {
 		const fetchSources = async () => {
 			try {
 				setLoading(true);
 				const data = await getSources();
-				setSource(data as SourceId[]);
+				setSource(data);
 			} catch (error) {
 				console.error("Failed to fetch sources:", error);
 				toast.error("Failed to load sources");
@@ -51,7 +53,7 @@ export default function ManageSourcePage() {
 		}
 	};
 
-	const handleEditClick = (source: SourceId) => {
+	const handleEditClick = (source: Source) => {
 		setSelectedSource(source);
 		setEditOpen(true);
 	};

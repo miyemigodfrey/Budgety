@@ -1,3 +1,5 @@
+"use client";
+
 import { ChevronRight, Wallet } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OutflowOverviewChart } from "@/components/charts/OutflowChart";
@@ -11,6 +13,7 @@ import { getSources, type SourceDto } from "@/api/sources";
 import { getTrends, type TrendPoint } from "@/api/transaction";
 import { Link } from "react-router-dom";
 import { formatCurrency } from "@/lib/formatCurrency";
+import { toMajor } from "@/lib/money";
 import { EmptyState, ErrorState } from "@/components/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Status } from "@/lib/status";
@@ -25,7 +28,7 @@ export default function SourcePage() {
 	// Distribution of current balances across sources, used by the overview chart.
 	const hasSources = source.length > 0;
 	const labels = source.map((s) => s.name);
-	const data = source.map((s) => s.remainingBalance);
+	const data = source.map((s) => toMajor(s.remainingBalance));
 
 	// Bumping this re-runs the fetch effect (used by retry and after a create).
 	const [reloadKey, setReloadKey] = useState(0);

@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { FileText, Plus, Wallet } from "lucide-react";
 import AddSourceModal from "@/features/addsource/sourceModal";
@@ -116,7 +118,7 @@ function Dashboard() {
 					{/* IMAGE */}
 
 					<img
-						src={budgetydash}
+						src={budgetydash.src}
 						alt="Dashboard illustration"
 						className="w-full md:w-[90%] lg:w-[45%] drop-shadow-2xl rounded-xl border border-border contrast-125 saturate-125"
 					/>

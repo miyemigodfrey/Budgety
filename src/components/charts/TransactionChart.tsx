@@ -19,6 +19,7 @@ import {
 import { EmptyState } from "@/components/EmptyState";
 import { BarChart3 } from "lucide-react";
 import { formatPeriod } from "@/lib/formatPeriod";
+import { toMajor } from "@/lib/money";
 
 const CHART_COLORS = [
 	"var(--chart-1)",
@@ -28,10 +29,12 @@ const CHART_COLORS = [
 	"var(--chart-5)",
 ];
 
-type TotalSeries = { period: string; total: number }[];
+// Amounts arrive as BigInt minor units from the server; converted to major
+// numbers with toMajor before recharts sees them (recharts needs numbers).
+type TotalSeries = { period: string; total: bigint }[];
 type BreakdownSeries = {
 	period: string;
-	sources: { sourceId: string; sourceName: string; amount: number }[];
+	sources: { sourceId: string; sourceName: string; amount: bigint }[];
 }[];
 
 /* ---------------- TOTAL TRANSACTIONS ---------------- */
@@ -50,7 +53,7 @@ export function TotalTransactionBarChart({
 }) {
 	const totalData = (series ?? []).map((item) => ({
 		month: formatPeriod(item.period),
-		total: item.total,
+		total: toMajor(item.total),
 	}));
 
 	const hasData = totalData.some((d) => d.total > 0);
@@ -123,9 +126,11 @@ export function TransactionBreakdownChart({
 			month: formatPeriod(w.period),
 		};
 		for (const name of names) {
-			row[keyByName.get(name)!] = w.sources
-				.filter((s) => s.sourceName === name)
-				.reduce((sum, s) => sum + s.amount, 0);
+			row[keyByName.get(name)!] = toMajor(
+				w.sources
+					.filter((s) => s.sourceName === name)
+					.reduce((sum, s) => sum + s.amount, 0n),
+			);
 		}
 		return row;
 	});

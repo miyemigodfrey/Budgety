@@ -1,3 +1,5 @@
+"use client";
+
 import { User, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TableDemo } from "../dashboard/DashboardPage";
@@ -22,7 +24,7 @@ import { getSummary, type ReportSummary } from "@/api/export";
 type Source = {
 	id: string;
 	name: string;
-	balance?: number;
+	balance?: bigint;
 };
 
 function TransactionPage() {

@@ -1,20 +1,10 @@
-import { type DefaultSession, type NextAuthConfig } from "next-auth";
+import { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 import { db } from "@/server/db";
-
-/**
- * Adds `id` to the session user.
- */
-declare module "next-auth" {
-	interface Session extends DefaultSession {
-		user: {
-			id: string;
-		} & DefaultSession["user"];
-	}
-}
+import { authConfigEdge } from "./config.edge";
 
 const credentialsSchema = z.object({
 	email: z.string().email(),
@@ -22,14 +12,15 @@ const credentialsSchema = z.object({
 });
 
 /**
- * NextAuth configuration.
+ * Full (Node-runtime) auth config: the edge-safe base plus the Credentials
+ * provider, which needs bcrypt + Prisma and so cannot run in middleware. This
+ * is where the old NestJS `auth.service.login` (the bcrypt.compare) lives.
  *
- * Credentials provider with JWT sessions. There is deliberately NO PrismaAdapter
- * and no Account/Session tables: the adapter cannot persist sessions for
- * credential sign-ins, so `session.strategy` must be "jwt". This is where the old
- * NestJS `auth.service.login` (the bcrypt.compare) lives now.
+ * There is deliberately NO PrismaAdapter and no Account/Session tables — a
+ * Credentials provider requires session.strategy = "jwt" (set in config.edge).
  */
 export const authConfig = {
+	...authConfigEdge,
 	providers: [
 		Credentials({
 			credentials: {
@@ -51,25 +42,4 @@ export const authConfig = {
 			},
 		}),
 	],
-	session: {
-		strategy: "jwt",
-		maxAge: 7 * 24 * 60 * 60, // 7 days, matching the old JWT_EXPIRATION
-	},
-	callbacks: {
-		// Persist the user id onto the token, then expose it on the session.
-		jwt: ({ token, user }) => {
-			if (user) token.id = user.id;
-			return token;
-		},
-		session: ({ session, token }) => ({
-			...session,
-			user: {
-				...session.user,
-				id: token.id as string,
-			},
-		}),
-	},
-	pages: {
-		signIn: "/login",
-	},
 } satisfies NextAuthConfig;
