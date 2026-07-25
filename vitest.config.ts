@@ -10,7 +10,7 @@ export default defineConfig({
 	test: {
 		// Fast unit tests by default. Integration tests (*.integration.test.ts)
 		// need a real Postgres and are run separately via `npm run test:db`, which
-		// sets INTEGRATION=1. The legacy backend/ bun:test specs are out of scope.
+		// sets INTEGRATION=1.
 		include: process.env.INTEGRATION
 			? ["src/**/*.integration.test.ts"]
 			: ["src/**/*.test.ts", "src/**/*.test.tsx"],

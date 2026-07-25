@@ -47,14 +47,7 @@ both-sides cascade, and a concurrency case proving `lockSources()`. It must
 pass, with one intentional difference from the old backend documented in the
 suite (the failed-edit error now reports the post-reverse balance).
 
-## 4. Diff old vs new (optional but recommended)
-
-The old NestJS backend is still in `backend/` for exactly this. Run it on
-:3000 (`cd backend && bun run start:dev`), run the new app
-(`npm run dev`), and compare responses for the demo user. This is why
-`backend/` was kept.
-
-## 5. Manual smoke test
+## 4. Manual smoke test
 
 `npm run dev`, then: sign up fresh → add a source → add one of each
 transaction type → edit one → delete one → reconcile → export PDF and CSV →
@@ -66,8 +59,12 @@ charts convert before recharts/chart.js. This is the one class of bug a
 typecheck can't catch, so eyeball the numbers on the dashboard, reports, and a
 source detail page.
 
-## 6. Final cleanup (Phase 9)
+## Notes
 
-Once verified, delete `backend/` and `frontend/` and drop the
-`react-router-dom` tsconfig alias / `src/compat`. They are intentionally kept
-until you've confirmed the port against a real database.
+- The old `backend/` and `frontend/` directories have been removed — this is now
+  a single Next.js app. Their history (including the balance-engine
+  characterization spec) is in git; the money math is now covered by
+  `npm run test:db`.
+- `react-router-dom` is aliased to `src/compat/react-router.tsx` so the ported
+  pages keep their navigation imports. Optional follow-up: rewrite those imports
+  onto `next/navigation` and drop the alias.
