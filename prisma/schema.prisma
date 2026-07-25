@@ -11,11 +11,11 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  // Pooled connection (Supavisor transaction mode, port 6543) for runtime.
+  provider = "postgresql"
+  // Session pooler (port 5432). NOT the transaction pooler (6543): the balance
+  // engine uses interactive transactions + SELECT ... FOR UPDATE, which need a
+  // session-pinned connection. See .env.example.
   url       = env("DATABASE_URL")
-  // Direct connection (session mode, port 5432) for migrations, which take
-  // advisory locks that a transaction-mode pooler cannot hold.
   directUrl = env("DIRECT_URL")
 }
 
