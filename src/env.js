@@ -7,10 +7,13 @@ export const env = createEnv({
 	 */
 	server: {
 		// Pooled connection for runtime (Supabase Supavisor, port 6543).
-		DATABASE_URL: z.string().url(),
+		// Validated as a non-empty string rather than .url(): Postgres connection
+		// strings (special chars in passwords, pgbouncer params) legitimately fail
+		// zod's URL check, and Prisma validates the real format at connect time.
+		DATABASE_URL: z.string().min(1),
 		// Direct connection for `prisma migrate` (port 5432). Prisma reads it from
 		// the schema's directUrl; optional in the app's own runtime.
-		DIRECT_URL: z.string().url().optional(),
+		DIRECT_URL: z.string().min(1).optional(),
 		// Replaces the old JWT_SECRET. No fallback on purpose: the app must refuse
 		// to boot without a real secret, unlike 'budgety-dev-secret'.
 		AUTH_SECRET:

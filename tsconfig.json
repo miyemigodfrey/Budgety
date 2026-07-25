@@ -40,5 +40,5 @@
     "*.cjs",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "generated", "backend", "frontend"]
+  "exclude": ["node_modules", "generated"]
 }
