@@ -1,3 +1,8 @@
+# Env — never commit real credentials. .env.example is the tracked template.
+.env
+.env.*
+!.env.example
+
 # Logs
 logs
 *.log
@@ -11,6 +16,12 @@ node_modules
 dist
 dist-ssr
 *.local
+
+# Next.js
+.next/
+next-env.d.ts
+tsconfig.tsbuildinfo
+/generated
 
 # Editor directories and files
 .vscode/*

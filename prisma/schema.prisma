@@ -1,0 +1,157 @@
+// Budgety data model.
+//
+// MONEY: every monetary field is BigInt holding MINOR UNITS (kobo, 1/100 NGN).
+// Not Float — repeated += on a stored balance accumulates drift. Not Int —
+// Postgres Int is 32-bit and caps near ₦21.4M, which lifetime aggregates blow
+// past. Conversion to/from major units happens in exactly one place:
+// src/lib/money.ts. BigInt crosses the tRPC boundary natively via superjson.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Session pooler (port 5432). NOT the transaction pooler (6543): the balance
+  // engine uses interactive transactions + SELECT ... FOR UPDATE, which need a
+  // session-pinned connection. See .env.example.
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Lowercase members deliberately: the wire contract is already lowercase
+// ('inflow', 'income'), so this keeps the API identical to the NestJS version
+// and lets the frontend's existing string-literal types port untouched.
+enum TransactionType {
+  inflow
+  outflow
+  transfer
+}
+
+enum CategoryType {
+  income
+  expense
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  // Nullable only to satisfy NextAuth's User shape; credentials users always
+  // have one. bcryptjs hash, cost 10.
+  password  String?
+  createdAt DateTime @default(now())
+
+  sources         Source[]
+  transactions    Transaction[]
+  categories      Category[]
+  reconciliations Reconciliation[]
+  settings        UserSettings?
+}
+
+model Source {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  // Running total, kept correct by the balance engine. The OPENING balance is
+  // derived from this and the ledger, never stored — see
+  // src/server/services/balance.ts
+  balance   BigInt   @default(0)
+  currency  String   @default("NGN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Two relations because Transaction has two FKs to Source. Cascade on both
+  // reproduces the old deleteTransactionsBySourceId, which removed
+  // transactions where the source was on EITHER side of a transfer.
+  transactions      Transaction[] @relation("txSource")
+  incomingTransfers Transaction[] @relation("txTarget")
+
+  reconciliations Reconciliation[]
+
+  @@index([userId])
+}
+
+model Transaction {
+  id     String          @id @default(cuid())
+  userId String
+  type   TransactionType
+  amount BigInt
+
+  // Free text, NOT a foreign key to Category — matches the existing model.
+  // Tradeoff: renaming a category does not rename it on historical
+  // transactions, and reports group by this string. Converting to a
+  // categoryId is a product decision, tracked as a follow-up.
+  category String
+  note     String   @default("")
+  date     DateTime
+
+  sourceId         String
+  transferTargetId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source         Source  @relation("txSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  transferTarget Source? @relation("txTarget", fields: [transferTargetId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([userId, type])
+  @@index([sourceId])
+  @@index([transferTargetId])
+}
+
+model Category {
+  id     String       @id @default(cuid())
+  userId String
+  name   String
+  type   CategoryType
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Deliberately NOT @@unique([userId, name, type]): the duplicate check is
+  // case-insensitive, which a plain unique constraint cannot express. It stays
+  // in the service so the existing 400 and its message survive.
+  @@index([userId])
+}
+
+model Reconciliation {
+  id            String   @id @default(cuid())
+  userId        String
+  sourceId      String
+  actualBalance BigInt
+  // Snapshot at reconcile time. Note getDiscrepancies recomputes against the
+  // LIVE balance, so these two columns are effectively decorative on read.
+  appBalance    BigInt
+  discrepancy   BigInt
+  reconciledAt  DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  // Makes the old "replace" upsert a real DB upsert — there was only ever one
+  // record per source.
+  @@unique([userId, sourceId])
+  @@index([userId])
+}
+
+model UserSettings {
+  // The FK is the PK: one settings row per user.
+  userId         String   @id
+  dailyReminder  Boolean  @default(false)
+  appLockEnabled Boolean  @default(false)
+  darkMode       Boolean  @default(false)
+  backupEnabled  Boolean  @default(false)
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// NOTE: NextAuth's Account / Session / VerificationToken models and the
+// PrismaAdapter are deliberately ABSENT. A Credentials provider requires
+// session.strategy = "jwt", and the adapter cannot create database sessions for
+// credential sign-ins. Adding an OAuth provider later means re-adding Account
+// and the adapter.
