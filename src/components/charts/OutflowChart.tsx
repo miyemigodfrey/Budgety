@@ -19,6 +19,7 @@ import {
 import { EmptyState } from "@/components/EmptyState";
 import { TrendingDown } from "lucide-react";
 import { formatPeriod } from "@/lib/formatPeriod";
+import { toMajor } from "@/lib/money";
 import type { TrendPoint } from "@/api/transaction";
 
 export const description = "Monthly outflow";
@@ -31,11 +32,13 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function OutflowOverviewChart({ series }: { series?: TrendPoint[] }) {
-	const hasData = series?.some((p) => p.outflow > 0);
+	const hasData = series?.some((p) => p.outflow > 0n);
 
+	// recharts does arithmetic on the values, so convert BigInt minor units to
+	// plain numbers before handing the data over.
 	const data = (series ?? []).map((p) => ({
 		month: formatPeriod(p.period),
-		outflow: p.outflow,
+		outflow: toMajor(p.outflow),
 	}));
 
 	return (

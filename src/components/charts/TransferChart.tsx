@@ -19,6 +19,7 @@ import {
 import { EmptyState } from "@/components/EmptyState";
 import { ArrowLeftRight } from "lucide-react";
 import { formatPeriod } from "@/lib/formatPeriod";
+import { toMajor } from "@/lib/money";
 import type { TrendPoint } from "@/api/transaction";
 
 export const description = "Monthly transfers";
@@ -31,11 +32,13 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function TransferOverviewChart({ series }: { series?: TrendPoint[] }) {
-	const hasData = series?.some((p) => p.transfer > 0);
+	const hasData = series?.some((p) => p.transfer > 0n);
 
+	// recharts does arithmetic on the values, so convert BigInt minor units to
+	// plain numbers before handing the data over.
 	const data = (series ?? []).map((p) => ({
 		month: formatPeriod(p.period),
-		transfer: p.transfer,
+		transfer: toMajor(p.transfer),
 	}));
 
 	return (
