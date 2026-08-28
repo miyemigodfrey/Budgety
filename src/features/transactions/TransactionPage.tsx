@@ -1,6 +1,7 @@
 "use client";
 
 import { User, Wallet } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import { cn } from "@/lib/utils";
 import { TableDemo } from "../dashboard/DashboardPage";
 import { Button } from "@/components/ui/button";
@@ -82,7 +83,8 @@ function TransactionPage() {
 		<>
 			<div className="min-h-screen w-full flex flex-col items-center py-6 px-4">
 				<header className="w-full max-w-5xl">
-					<div className="flex items-center justify-between p-2">
+					<div className="flex items-center gap-2 p-2">
+						<BackButton />
 						<h1 className="font-bold text-2xl">Transaction</h1>
 					</div>
 				</header>

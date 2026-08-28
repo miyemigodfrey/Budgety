@@ -1,6 +1,7 @@
 "use client";
 
 import { Clock, Edit, Trash2, Wallet } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { deleteSource, getSources, type Source } from "@/api/sources";
@@ -61,11 +62,14 @@ export default function ManageSourcePage() {
 	return (
 		<div className="min-h-screen w-full flex flex-col items-center py-6 px-4">
 			<header className="w-full max-w-5xl">
-				<div className="flex flex-col space-y-1 p-2">
-					<h1 className="font-bold text-2xl">Manage Your Source</h1>
-					<p className="text-sm text-muted-foreground">
-						Manage and monitor your connected data sources
-					</p>
+				<div className="flex items-center gap-2 p-2">
+					<BackButton />
+					<div className="flex flex-col space-y-1">
+						<h1 className="font-bold text-2xl">Manage Your Source</h1>
+						<p className="text-sm text-muted-foreground">
+							Manage and monitor your connected data sources
+						</p>
+				</div>
 				</div>
 			</header>
 

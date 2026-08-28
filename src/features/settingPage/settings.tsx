@@ -10,6 +10,7 @@ import {
 	LogOut,
 	UserX,
 } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import { Link } from "react-router-dom";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -70,7 +71,10 @@ export default function SettingPage() {
 	return (
 		<div className="min-h-screen w-full flex flex-col items-center py-6 px-4">
 			<header className="w-full max-w-5xl">
-				<h1 className="font-bold text-2xl">Settings</h1>
+				<div className="flex items-center gap-2">
+					<BackButton />
+					<h1 className="font-bold text-2xl">Settings</h1>
+				</div>
 			</header>
 
 			<div className=" w-full flex flex-col items-start gap-4 mt-8">

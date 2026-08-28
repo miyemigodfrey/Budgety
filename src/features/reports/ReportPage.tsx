@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { BackButton } from "@/components/BackButton";
 import {
 	TotalTransactionBarChart,
 	TransactionBreakdownChart,
@@ -48,7 +49,10 @@ export default function ReportPage() {
 	return (
 		<div className="min-h-screen w-full flex flex-col items-center py-6 px-4">
 			<header className="w-full max-w-5xl">
-				<h1 className="font-bold text-2xl">Report</h1>
+				<div className="flex items-center gap-2">
+					<BackButton />
+					<h1 className="font-bold text-2xl">Report</h1>
+				</div>
 			</header>
 			<DownloardCards />
 

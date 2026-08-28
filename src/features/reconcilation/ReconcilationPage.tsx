@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { BackButton } from "@/components/BackButton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -78,7 +79,10 @@ export default function ReconcilationPage() {
 	return (
 		<div className="min-h-screen w-full mx-auto flex flex-col items-center py-6 px-4 md:px-10 md:py-10 max-w-2xl">
 			<header className="w-full max-w-5xl">
-				<h1 className="font-bold text-2xl">Cash Reconciliation</h1>
+				<div className="flex items-center gap-2">
+					<BackButton />
+					<h1 className="font-bold text-2xl">Cash Reconciliation</h1>
+				</div>
 			</header>
 			{sources.length === 0 ? (
 				<div className="mt-8 w-full">

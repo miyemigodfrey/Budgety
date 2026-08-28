@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRight, Wallet } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OutflowOverviewChart } from "@/components/charts/OutflowChart";
 import { TransferOverviewChart } from "@/components/charts/TransferChart";
@@ -67,7 +68,8 @@ export default function SourcePage() {
 	return (
 		<div className="min-h-screen w-full flex flex-col items-center py-6 px-4">
 			<header className="w-full max-w-5xl">
-				<div className="flex items-center justify-between p-2">
+				<div className="flex items-center gap-2 p-2">
+					<BackButton />
 					<h1 className="font-bold text-2xl">Set Up Your Source</h1>
 				</div>
 			</header>
