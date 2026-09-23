@@ -1,11 +1,15 @@
 "use client";
 
-import { ChevronRight, Wallet } from "lucide-react";
+import {
+	ArrowLeftRight,
+	ChevronRight,
+	TrendingDown,
+	TrendingUp,
+	Wallet,
+} from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { OutflowOverviewChart } from "@/components/charts/OutflowChart";
-import { TransferOverviewChart } from "@/components/charts/TransferChart";
-import InflowOverviewChart from "@/components/charts/InflowChart";
+import { FlowTrendChart } from "@/components/charts/FlowTrendChart";
 import { Button } from "@/components/ui/button";
 import { useCallback, useEffect, useState } from "react";
 import AddSourceModal from "./sourceModal";
@@ -14,7 +18,6 @@ import { getSources, type SourceDto } from "@/api/sources";
 import { getTrends, type TrendPoint } from "@/api/transaction";
 import { Link } from "react-router-dom";
 import { formatCurrency } from "@/lib/formatCurrency";
-import { toMajor } from "@/lib/money";
 import { EmptyState, ErrorState } from "@/components/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Status } from "@/lib/status";
@@ -26,10 +29,7 @@ export default function SourcePage() {
 	const [trends, setTrends] = useState<TrendPoint[]>([]);
 	const [status, setStatus] = useState<Status>("loading");
 
-	// Distribution of current balances across sources, used by the overview chart.
 	const hasSources = source.length > 0;
-	const labels = source.map((s) => s.name);
-	const data = source.map((s) => toMajor(s.remainingBalance));
 
 	// Bumping this re-runs the fetch effect (used by retry and after a create).
 	const [reloadKey, setReloadKey] = useState(0);
@@ -167,15 +167,39 @@ export default function SourcePage() {
 							</TabsList>
 
 							<TabsContent value="inflow">
-								<InflowOverviewChart labels={labels} data={data} />
+								<FlowTrendChart
+									series={trends}
+									flow="inflow"
+									title="Inflow"
+									description="Money in, per month (last 6 months)"
+									icon={TrendingUp}
+									emptyTitle="No inflow yet"
+									emptyDescription="Record income and it'll show up here month by month."
+								/>
 							</TabsContent>
 
 							<TabsContent value="outflow">
-								<OutflowOverviewChart series={trends} />
+								<FlowTrendChart
+									series={trends}
+									flow="outflow"
+									title="Outflow"
+									description="Money out, per month (last 6 months)"
+									icon={TrendingDown}
+									emptyTitle="No outflow yet"
+									emptyDescription="Record spending and it'll show up here month by month."
+								/>
 							</TabsContent>
 
 							<TabsContent value="transfer">
-								<TransferOverviewChart series={trends} />
+								<FlowTrendChart
+									series={trends}
+									flow="transfer"
+									title="Transfer"
+									description="Between your sources, per month (last 6 months)"
+									icon={ArrowLeftRight}
+									emptyTitle="No transfers yet"
+									emptyDescription="Move money between sources and it'll show up here."
+								/>
 							</TabsContent>
 						</Tabs>
 					</div>
