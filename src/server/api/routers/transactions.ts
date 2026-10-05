@@ -4,6 +4,7 @@ import {
 	createTransactionSchema,
 	listTransactionsSchema,
 	monthsSchema,
+	spaceScopeSchema,
 	updateTransactionSchema,
 } from "@/server/api/schemas";
 import * as transactions from "@/server/services/transactions";
@@ -15,14 +16,21 @@ export const transactionsRouter = createTRPCRouter({
 			transactions.listTransactions(ctx.db, ctx.session.user.id, input),
 		),
 
-	overview: protectedProcedure.query(({ ctx }) =>
-		transactions.getOverview(ctx.db, ctx.session.user.id),
-	),
+	overview: protectedProcedure
+		.input(spaceScopeSchema)
+		.query(({ ctx, input }) =>
+			transactions.getOverview(ctx.db, ctx.session.user.id, input?.spaceId),
+		),
 
 	trends: protectedProcedure
 		.input(monthsSchema)
 		.query(({ ctx, input }) =>
-			transactions.getTrends(ctx.db, ctx.session.user.id, input?.months ?? 6),
+			transactions.getTrends(
+				ctx.db,
+				ctx.session.user.id,
+				input?.months ?? 6,
+				input?.spaceId,
+			),
 		),
 
 	create: protectedProcedure

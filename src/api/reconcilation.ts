@@ -1,4 +1,5 @@
 import { trpc } from "./client";
+import { spaceArg } from "./activeSpace";
 import type { RouterOutputs } from "@/trpc/react";
 
 export type ReconcileResult = RouterOutputs["reconciliation"]["reconcile"][number];
@@ -10,7 +11,8 @@ export type ReconcileEntry = { sourceId: string; actualBalance: number };
 export const createReconciliation = (entries: ReconcileEntry[]) =>
 	trpc.reconciliation.reconcile.mutate({ entries });
 
-export const getDiscrepancies = () => trpc.reconciliation.list.query();
+export const getDiscrepancies = () =>
+	trpc.reconciliation.list.query(spaceArg());
 
 export const getReconciliationBySourceId = (sourceId: string) =>
 	trpc.reconciliation.bySource.query({ sourceId });

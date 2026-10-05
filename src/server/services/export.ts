@@ -1,16 +1,18 @@
 import type { PrismaClient, Transaction } from "@prisma/client";
 import { getMonthWindows } from "./balance";
+import { sourceWhere, txWhere } from "./spaceFilter";
 
 /** JSON summary for the Reports page. */
 export async function getSummary(
 	db: PrismaClient,
 	userId: string,
 	months: number,
+	spaceId?: string,
 ) {
 	const boundedMonths = Math.min(Math.max(months, 1), 24);
 	const [sources, transactions] = await Promise.all([
-		db.source.findMany({ where: { userId } }),
-		db.transaction.findMany({ where: { userId } }),
+		db.source.findMany({ where: sourceWhere(userId, spaceId) }),
+		db.transaction.findMany({ where: txWhere(userId, spaceId) }),
 	]);
 
 	const totalBalance = sources.reduce((sum, s) => sum + s.balance, 0n);

@@ -25,12 +25,21 @@ export const registerSchema = z
 	})
 	.strict();
 
+// ---- spaces ----
+// Scope for read procedures. Absent spaceId = the "All" view (no filter).
+export const spaceScopeSchema = z
+	.object({ spaceId: z.string().optional() })
+	.strict()
+	.optional();
+
 // ---- sources ----
 export const createSourceSchema = z
 	.object({
 		name: z.string().min(1),
 		balance: money.transform(toMinor),
 		currency: z.string().optional(),
+		// The space to create the source in (required — you can't add in "All").
+		spaceId: z.string(),
 	})
 	.strict();
 
@@ -82,6 +91,7 @@ export const listTransactionsSchema = z
 		type: transactionTypeSchema.optional(),
 		startDate: z.string().optional(),
 		endDate: z.string().optional(),
+		spaceId: z.string().optional(),
 	})
 	.strict()
 	.optional();
@@ -128,6 +138,9 @@ export const updateSettingsSchema = z
 
 // ---- shared query params (previously unvalidated) ----
 export const monthsSchema = z
-	.object({ months: z.coerce.number().int().default(6) })
+	.object({
+		months: z.coerce.number().int().default(6),
+		spaceId: z.string().optional(),
+	})
 	.strict()
 	.optional();

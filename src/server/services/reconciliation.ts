@@ -43,10 +43,16 @@ export async function reconcile(
 	return results;
 }
 
-export async function getDiscrepancies(db: PrismaClient, userId: string) {
+export async function getDiscrepancies(
+	db: PrismaClient,
+	userId: string,
+	spaceId?: string,
+) {
 	const [records, sources] = await Promise.all([
-		db.reconciliation.findMany({ where: { userId } }),
-		db.source.findMany({ where: { userId } }),
+		db.reconciliation.findMany({
+			where: { userId, ...(spaceId ? { source: { spaceId } } : {}) },
+		}),
+		db.source.findMany({ where: { userId, ...(spaceId ? { spaceId } : {}) } }),
 	]);
 
 	return records.map((r) => {

@@ -7,6 +7,7 @@ import { dashboardRouter } from "@/server/api/routers/dashboard";
 import { reconciliationRouter } from "@/server/api/routers/reconciliation";
 import { settingsRouter } from "@/server/api/routers/settings";
 import { exportRouter } from "@/server/api/routers/export";
+import { spacesRouter } from "@/server/api/routers/spaces";
 
 /**
  * The primary router, one sub-router per former NestJS module.
@@ -20,6 +21,7 @@ export const appRouter = createTRPCRouter({
 	reconciliation: reconciliationRouter,
 	settings: settingsRouter,
 	export: exportRouter,
+	spaces: spacesRouter,
 });
 
 // export type definition of API

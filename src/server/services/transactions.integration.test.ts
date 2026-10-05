@@ -22,10 +22,17 @@ const d = HAS_DB ? describe : describe.skip;
 
 const EMAIL = "balance-engine-test@budgety.test";
 let userId: string;
+let spaceId: string;
 
 const src = async (name: string, balanceMajor: number) => {
 	const s = await db.source.create({
-		data: { userId, name, balance: toMinor(balanceMajor), currency: "NGN" },
+		data: {
+			userId,
+			spaceId,
+			name,
+			balance: toMinor(balanceMajor),
+			currency: "NGN",
+		},
 	});
 	return s.id;
 };
@@ -38,9 +45,16 @@ const nowIso = () => new Date().toISOString();
 beforeEach(async () => {
 	await db.user.deleteMany({ where: { email: EMAIL } });
 	const user = await db.user.create({
-		data: { email: EMAIL, name: "Test", password: "x" },
+		data: {
+			email: EMAIL,
+			name: "Test",
+			password: "x",
+			spaces: { create: { name: "Personal", isDefault: true } },
+		},
+		include: { spaces: true },
 	});
 	userId = user.id;
+	spaceId = user.spaces[0]!.id;
 });
 
 afterAll(async () => {

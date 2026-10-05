@@ -14,6 +14,7 @@ import UniversalModal from "@/components/ui/modal";
 import { createTransaction } from "@/api/transaction";
 import { getSources } from "@/api/sources";
 import { getCategories, type Category } from "@/api/categories";
+import { useSpace } from "@/hooks/useSpace";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "@/lib/apiError";
 
@@ -32,6 +33,7 @@ export default function AddTransactionModal({
 	setOpen,
 	onCreated,
 }: Props) {
+	const { isAllView } = useSpace();
 	const [activeTab, setActiveTab] = useState<TransactionType>("inflow");
 	const [amount, setAmount] = useState("");
 	const [category, setCategory] = useState("");
@@ -110,6 +112,12 @@ export default function AddTransactionModal({
 	};
 
 	const handleSubmit = async () => {
+		// "All" is a read-only overview — transactions belong to a single space.
+		if (isAllView) {
+			toast.error("Open a space first, then add a transaction to it.");
+			return;
+		}
+
 		const parsedAmount = Number(amount);
 
 		if (!source || !category || !amount) {

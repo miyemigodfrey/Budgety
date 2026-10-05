@@ -28,18 +28,21 @@ async function main() {
 			password,
 			categories: { create: DEFAULT_CATEGORIES },
 			settings: { create: DEFAULT_SETTINGS },
+			spaces: { create: { name: "Personal", isDefault: true } },
 		},
+		include: { spaces: true },
 	});
+	const personalSpaceId = user.spaces[0]!.id;
 
 	const [gtbank, cash, piggy] = await Promise.all([
 		prisma.source.create({
-			data: { userId: user.id, name: "GTBank", currency: "NGN" },
+			data: { userId: user.id, spaceId: personalSpaceId, name: "GTBank", currency: "NGN" },
 		}),
 		prisma.source.create({
-			data: { userId: user.id, name: "Cash", currency: "NGN" },
+			data: { userId: user.id, spaceId: personalSpaceId, name: "Cash", currency: "NGN" },
 		}),
 		prisma.source.create({
-			data: { userId: user.id, name: "Piggy Vest", currency: "NGN" },
+			data: { userId: user.id, spaceId: personalSpaceId, name: "Piggy Vest", currency: "NGN" },
 		}),
 	]);
 

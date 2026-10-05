@@ -1,10 +1,15 @@
 import type { PrismaClient } from "@prisma/client";
 import { computeOpeningBalance } from "./balance";
+import { sourceWhere, txWhere } from "./spaceFilter";
 
-export async function getDashboard(db: PrismaClient, userId: string) {
+export async function getDashboard(
+	db: PrismaClient,
+	userId: string,
+	spaceId?: string,
+) {
 	const [sources, transactions] = await Promise.all([
-		db.source.findMany({ where: { userId } }),
-		db.transaction.findMany({ where: { userId } }),
+		db.source.findMany({ where: sourceWhere(userId, spaceId) }),
+		db.transaction.findMany({ where: txWhere(userId, spaceId) }),
 	]);
 
 	const sourcesSummary = sources.map((s) => ({

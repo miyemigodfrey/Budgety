@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import UniversalModal from "@/components/ui/modal";
 import { useState } from "react";
 import { createSource, type Source } from "@/api/sources";
+import { useSpace } from "@/hooks/useSpace";
 import { toast } from "react-toastify";
 
 type Props = {
@@ -16,8 +17,15 @@ type Props = {
 export default function AddSourceModal({ open, setOpen, onCreated }: Props) {
 	const [name, setName] = useState("");
 	const [balance, setBalance] = useState("");
+	const { activeSpaceId, activeSpace, isAllView } = useSpace();
 
 	const handleSubmit = async () => {
+		// A source must live in one space; you can't add from the "All" view.
+		if (isAllView || !activeSpaceId) {
+			toast.error("Open a space first, then add a source to it.");
+			return;
+		}
+
 		if (!name.trim()) {
 			toast.error("Please enter a source name.");
 			return;
@@ -34,6 +42,7 @@ export default function AddSourceModal({ open, setOpen, onCreated }: Props) {
 			const created = await createSource({
 				name: name.trim(),
 				balance: parsedBalance,
+				spaceId: activeSpaceId,
 			});
 
 			toast.success("Source created successfully");
@@ -52,7 +61,11 @@ export default function AddSourceModal({ open, setOpen, onCreated }: Props) {
 			open={open}
 			onOpenChange={setOpen}
 			title="Add a Source"
-			description="Fill in the details to create a new source."
+			description={
+				isAllView
+					? "Open a space first — sources belong to a single space."
+					: `New source in "${activeSpace?.name ?? "this space"}".`
+			}
 			footer={
 				<div className="w-full flex flex-col gap-3">
 					<Button className="bg-success/70" onClick={handleSubmit}>

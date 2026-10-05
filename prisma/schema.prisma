@@ -42,6 +42,7 @@ model User {
   password  String?
   createdAt DateTime @default(now())
 
+  spaces          Space[]
   sources         Source[]
   transactions    Transaction[]
   categories      Category[]
@@ -49,9 +50,31 @@ model User {
   settings        UserSettings?
 }
 
+// A self-contained "board" of sources — e.g. Personal, Business, Savings. The
+// active space scopes the whole app; sources and transactions never cross
+// spaces. "All" is a read-only view and is NOT a Space row (it's the absence of
+// a space filter).
+model Space {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  // Exactly one default space per user (the one existing data was migrated into
+  // and new users start with). Enforced in the service, not the schema.
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sources Source[]
+
+  @@index([userId])
+}
+
 model Source {
   id        String   @id @default(cuid())
   userId    String
+  // The space this source belongs to. Every source has exactly one.
+  spaceId   String
   name      String
   // Running total, kept correct by the balance engine. The OPENING balance is
   // derived from this and the ledger, never stored — see
@@ -61,7 +84,11 @@ model Source {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Restrict: deleting a space that still has sources is blocked (also enforced
+  // in the service). The app has no user-deletion flow, so this never conflicts
+  // with the User cascade.
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Restrict)
 
   // Two relations because Transaction has two FKs to Source. Cascade on both
   // reproduces the old deleteTransactionsBySourceId, which removed
@@ -72,6 +99,7 @@ model Source {
   reconciliations Reconciliation[]
 
   @@index([userId])
+  @@index([spaceId])
 }
 
 model Transaction {

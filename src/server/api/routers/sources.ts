@@ -3,18 +3,23 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import {
 	createSourceSchema,
 	sourceSummarySchema,
+	spaceScopeSchema,
 	updateSourceSchema,
 } from "@/server/api/schemas";
 import * as sources from "@/server/services/sources";
 
 export const sourcesRouter = createTRPCRouter({
-	list: protectedProcedure.query(({ ctx }) =>
-		sources.listSources(ctx.db, ctx.session.user.id),
-	),
+	list: protectedProcedure
+		.input(spaceScopeSchema)
+		.query(({ ctx, input }) =>
+			sources.listSources(ctx.db, ctx.session.user.id, input?.spaceId),
+		),
 
-	overview: protectedProcedure.query(({ ctx }) =>
-		sources.getSourcesOverview(ctx.db, ctx.session.user.id),
-	),
+	overview: protectedProcedure
+		.input(spaceScopeSchema)
+		.query(({ ctx, input }) =>
+			sources.getSourcesOverview(ctx.db, ctx.session.user.id, input?.spaceId),
+		),
 
 	byId: protectedProcedure
 		.input(z.object({ id: z.string() }))

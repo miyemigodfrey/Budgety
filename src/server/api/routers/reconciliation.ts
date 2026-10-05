@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { reconcileSchema } from "@/server/api/schemas";
+import { reconcileSchema, spaceScopeSchema } from "@/server/api/schemas";
 import * as reconciliation from "@/server/services/reconciliation";
 
 export const reconciliationRouter = createTRPCRouter({
@@ -10,9 +10,15 @@ export const reconciliationRouter = createTRPCRouter({
 			reconciliation.reconcile(ctx.db, ctx.session.user.id, input.entries),
 		),
 
-	list: protectedProcedure.query(({ ctx }) =>
-		reconciliation.getDiscrepancies(ctx.db, ctx.session.user.id),
-	),
+	list: protectedProcedure
+		.input(spaceScopeSchema)
+		.query(({ ctx, input }) =>
+			reconciliation.getDiscrepancies(
+				ctx.db,
+				ctx.session.user.id,
+				input?.spaceId,
+			),
+		),
 
 	bySource: protectedProcedure
 		.input(z.object({ sourceId: z.string() }))

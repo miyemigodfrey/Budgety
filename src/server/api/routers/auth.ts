@@ -23,9 +23,9 @@ export const authRouter = createTRPCRouter({
 
 			const password = await bcrypt.hash(input.password, 10);
 
-			// Create the user with default categories and a settings row in one
-			// transaction. Seeding settings here is what lets settings.get be a pure
-			// read (the NestJS version lazily inserted on read).
+			// Create the user with default categories, a settings row, and a
+			// default "Personal" space in one transaction. Seeding these here is
+			// what lets settings.get / spaces be pure reads.
 			const user = await ctx.db.user.create({
 				data: {
 					email: input.email,
@@ -33,6 +33,7 @@ export const authRouter = createTRPCRouter({
 					password,
 					categories: { create: DEFAULT_CATEGORIES },
 					settings: { create: DEFAULT_SETTINGS },
+					spaces: { create: { name: "Personal", isDefault: true } },
 				},
 			});
 

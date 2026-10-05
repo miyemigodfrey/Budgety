@@ -9,7 +9,7 @@ export default function Navbar() {
 
 	return (
 		<nav className="fixed bottom-0 left-0 right-0 md:hidden bg-card border-t border-border shadow-md pb-3 pt-1.5">
-			{/* Six items don't fit a phone width, so the bar scrolls sideways
+			{/* The items don't fit a phone width, so the bar scrolls sideways
 			    instead of clipping the last item out of reach. */}
 			<ul className="flex items-center gap-1 overflow-x-auto scroll-smooth px-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 				{navItems.map((item) => {

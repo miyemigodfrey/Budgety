@@ -1,14 +1,19 @@
 import { TRPCError } from "@trpc/server";
 import type { PrismaClient } from "@prisma/client";
 import { computeSourceStats } from "./balance";
+import { sourceWhere, txWhere } from "./spaceFilter";
 
 const notFound = () =>
 	new TRPCError({ code: "NOT_FOUND", message: "Source not found" });
 
-export async function listSources(db: PrismaClient, userId: string) {
+export async function listSources(
+	db: PrismaClient,
+	userId: string,
+	spaceId?: string,
+) {
 	const [sources, transactions] = await Promise.all([
-		db.source.findMany({ where: { userId } }),
-		db.transaction.findMany({ where: { userId } }),
+		db.source.findMany({ where: sourceWhere(userId, spaceId) }),
+		db.transaction.findMany({ where: txWhere(userId, spaceId) }),
 	]);
 	return sources.map((source) => {
 		const stats = computeSourceStats(source.id, source.balance, transactions);
@@ -20,10 +25,14 @@ export async function listSources(db: PrismaClient, userId: string) {
 	});
 }
 
-export async function getSourcesOverview(db: PrismaClient, userId: string) {
+export async function getSourcesOverview(
+	db: PrismaClient,
+	userId: string,
+	spaceId?: string,
+) {
 	const [sources, transactions] = await Promise.all([
-		db.source.findMany({ where: { userId } }),
-		db.transaction.findMany({ where: { userId } }),
+		db.source.findMany({ where: sourceWhere(userId, spaceId) }),
+		db.transaction.findMany({ where: txWhere(userId, spaceId) }),
 	]);
 
 	const summaries = sources.map((source) => {
@@ -124,11 +133,19 @@ export async function getSourceSummary(
 export async function createSource(
 	db: PrismaClient,
 	userId: string,
-	input: { name: string; balance: bigint; currency?: string },
+	input: { name: string; balance: bigint; currency?: string; spaceId: string },
 ) {
+	// The source is created inside a space — validate it belongs to the user.
+	const space = await db.space.findFirst({
+		where: { id: input.spaceId, userId },
+	});
+	if (!space) {
+		throw new TRPCError({ code: "NOT_FOUND", message: "Space not found" });
+	}
 	return db.source.create({
 		data: {
 			userId,
+			spaceId: input.spaceId,
 			name: input.name,
 			balance: input.balance,
 			currency: input.currency ?? "NGN",

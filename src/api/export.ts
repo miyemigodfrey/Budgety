@@ -1,10 +1,11 @@
 import { trpc } from "./client";
+import { spaceArg } from "./activeSpace";
 import type { RouterOutputs } from "@/trpc/react";
 
 export type ReportSummary = RouterOutputs["export"]["summary"];
 
 export const getSummary = (months: number) =>
-	trpc.export.summary.query({ months });
+	trpc.export.summary.query({ months, ...spaceArg() });
 
 // PDF and CSV are Route Handlers, downloaded via a plain anchor (same-origin,
 // so the session cookie is sent). These build the hrefs.

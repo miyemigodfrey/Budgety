@@ -2,6 +2,7 @@ import {
 	ArrowLeftRight,
 	FileText,
 	House,
+	Layers,
 	Printer,
 	Scale,
 	Settings,
@@ -23,18 +24,19 @@ export type NavItem = {
 
 export const navItems: NavItem[] = [
 	{ id: 1, url: "/dashboard", icon: House, label: "Home" },
+	{ id: 2, url: "/spaces", icon: Layers, label: "Spaces" },
 	{
-		id: 2,
+		id: 3,
 		url: "/source",
 		icon: Printer,
 		label: "Sources",
 		matchPrefixes: ["/source", "/sources"],
 	},
-	{ id: 3, url: "/transaction", icon: ArrowLeftRight, label: "Transaction" },
-	{ id: 4, url: "/report", icon: FileText, label: "Report" },
-	{ id: 5, url: "/reconcilation", icon: Scale, label: "Reconcile" },
+	{ id: 4, url: "/transaction", icon: ArrowLeftRight, label: "Transaction" },
+	{ id: 5, url: "/report", icon: FileText, label: "Report" },
+	{ id: 6, url: "/reconcilation", icon: Scale, label: "Reconcile" },
 	{
-		id: 6,
+		id: 7,
 		url: "/setting",
 		icon: Settings,
 		label: "Settings",

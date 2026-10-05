@@ -1,4 +1,5 @@
 import { trpc } from "./client";
+import { spaceArg } from "./activeSpace";
 import type { RouterInputs, RouterOutputs } from "@/trpc/react";
 
 // Types inferred from the router so pages import the same names as before.
@@ -10,7 +11,7 @@ export type SourceSummary = RouterOutputs["sources"]["summary"];
 export type CreateSourceDto = RouterInputs["sources"]["create"];
 export type UpdateSourceDto = Omit<RouterInputs["sources"]["update"], "id">;
 
-export const getSources = () => trpc.sources.list.query();
+export const getSources = () => trpc.sources.list.query(spaceArg());
 
 export const getSourceById = (id: string) => trpc.sources.byId.query({ id });
 

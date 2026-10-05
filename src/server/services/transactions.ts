@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { Prisma, type PrismaClient, type TransactionType } from "@prisma/client";
 import { toMajor } from "@/lib/money";
 import { computeOpeningBalance, getMonthWindows } from "./balance";
+import { sourceWhere, txWhere } from "./spaceFilter";
 
 /** A Prisma transaction client (the `tx` inside `$transaction`). */
 type Tx = Prisma.TransactionClient;
@@ -136,6 +137,10 @@ export async function createTransaction(
 				where: { id: input.transferTargetId, userId },
 			});
 			if (!target) throw notFound("Transfer target source not found");
+			// Hard wall: money can't move between spaces.
+			if (target.spaceId !== source.spaceId) {
+				throw badRequest("You can't transfer between different spaces");
+			}
 		}
 
 		await lockSources(tx, [input.sourceId, input.transferTargetId]);
@@ -208,6 +213,10 @@ export async function updateTransaction(
 				where: { id: newTargetId, userId },
 			});
 			if (!target) throw notFound("Transfer target source not found");
+			// Hard wall: money can't move between spaces.
+			if (target.spaceId !== newSource.spaceId) {
+				throw badRequest("You can't transfer between different spaces");
+			}
 		}
 
 		await lockSources(tx, [
@@ -317,9 +326,11 @@ export async function listTransactions(
 		type?: TransactionType;
 		startDate?: string;
 		endDate?: string;
+		spaceId?: string;
 	},
 ) {
 	const where: Prisma.TransactionWhereInput = { userId };
+	if (filters?.spaceId) where.source = { spaceId: filters.spaceId };
 	if (filters?.sourceId) {
 		where.OR = [
 			{ sourceId: filters.sourceId },
@@ -337,10 +348,14 @@ export async function listTransactions(
 	return db.transaction.findMany({ where, orderBy: { date: "desc" } });
 }
 
-export async function getOverview(db: PrismaClient, userId: string) {
+export async function getOverview(
+	db: PrismaClient,
+	userId: string,
+	spaceId?: string,
+) {
 	const [sources, transactions] = await Promise.all([
-		db.source.findMany({ where: { userId } }),
-		db.transaction.findMany({ where: { userId } }),
+		db.source.findMany({ where: sourceWhere(userId, spaceId) }),
+		db.transaction.findMany({ where: txWhere(userId, spaceId) }),
 	]);
 	const sourceById = new Map(sources.map((s) => [s.id, s]));
 
@@ -417,11 +432,12 @@ export async function getTrends(
 	db: PrismaClient,
 	userId: string,
 	months: number,
+	spaceId?: string,
 ) {
 	const boundedMonths = Math.min(Math.max(months, 1), 24);
 	const [sources, transactions] = await Promise.all([
-		db.source.findMany({ where: { userId } }),
-		db.transaction.findMany({ where: { userId } }),
+		db.source.findMany({ where: sourceWhere(userId, spaceId) }),
+		db.transaction.findMany({ where: txWhere(userId, spaceId) }),
 	]);
 	const windows = getMonthWindows(boundedMonths);
 
