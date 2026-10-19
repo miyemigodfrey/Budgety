@@ -1,7 +1,8 @@
 "use client";
 
-import { User, Wallet } from "lucide-react";
+import { Pencil, User, Wallet } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
+import EditTransactionModal from "./EditTransactionModal";
 import { cn } from "@/lib/utils";
 import { TableDemo } from "../dashboard/DashboardPage";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,8 @@ function TransactionPage() {
 		useState<TransactionOverviewDto | null>(null);
 	const [summary, setSummary] = useState<ReportSummary | null>(null);
 	const [status, setStatus] = useState<Status>("loading");
+	const [editing, setEditing] = useState<TransactionDto | null>(null);
+	const [editOpen, setEditOpen] = useState(false);
 
 	const [reloadKey, setReloadKey] = useState(0);
 
@@ -168,32 +171,55 @@ function TransactionPage() {
 										(src) => src.id === transaction.sourceId,
 									);
 									const isInflow = transaction.type === "inflow";
+									const isTransfer = transaction.type === "transfer";
+									const target = isTransfer
+										? sources.find(
+												(src) => src.id === transaction.transferTargetId,
+											)
+										: undefined;
+									// Tri-state colour: inflow=green, outflow=red, transfer=brand.
+									const tone = isInflow
+										? "text-success"
+										: isTransfer
+											? "text-brand"
+											: "text-danger";
+									const sign = isInflow ? "+" : isTransfer ? "" : "-";
 									return (
 										<li
 											key={transaction.id}
 											className={cn(
-												"mx-4 pb-4 pt-2 border-b border-border flex items-start justify-between gap-3",
-												isInflow ? "text-success" : "text-danger",
+												"mx-4 pb-4 pt-2 border-b border-border flex items-start justify-between gap-2",
+												tone,
 											)}>
-											<div className="flex items-start gap-3">
+											<div className="flex items-start gap-3 min-w-0">
 												<div
 													className={cn(
-														"flex items-center justify-center w-10 h-10 rounded-full",
-														isInflow ? "bg-success-surface" : "bg-danger-surface",
+														"flex shrink-0 items-center justify-center w-10 h-10 rounded-full",
+														isInflow
+															? "bg-success-surface"
+															: isTransfer
+																? "bg-brand/10"
+																: "bg-danger-surface",
 													)}>
 													<Wallet className=" w-5 h-5" />
 												</div>
 
-												<div className="space-y-1">
-													<p className="font-semibold text-foreground text-sm md:text-base">
+												<div className="space-y-1 min-w-0">
+													<p className="font-semibold text-foreground text-sm md:text-base truncate">
 														{source?.name || "Unknown Source"}
+														{isTransfer && (
+															<span className="text-muted-foreground font-normal">
+																{" → "}
+																{target?.name ?? "Unknown"}
+															</span>
+														)}
 													</p>
 
 													<p className="text-xs md:text-sm text-muted-foreground">
 														Added on {formatDate(transaction.createdAt)}
 													</p>
 
-													<div className="flex items-center gap-2.5">
+													<div className="flex flex-wrap items-center gap-2">
 														{transaction.category && (
 															<span className="inline-block font-semibold text-xs md:text-sm text-foreground bg-surface-sunken px-3 py-1 rounded-full">
 																{transaction.category}
@@ -204,7 +230,9 @@ function TransactionPage() {
 																"inline-block font-semibold text-xs md:text-sm border px-3 py-1 rounded-full",
 																isInflow
 																	? "bg-success-surface border-success"
-																	: "bg-danger-surface border-danger",
+																	: isTransfer
+																		? "bg-brand/10 border-brand"
+																		: "bg-danger-surface border-danger",
 															)}>
 															{transaction.type}
 														</span>
@@ -212,9 +240,23 @@ function TransactionPage() {
 												</div>
 											</div>
 
-											<p className="font-semibold text-sm md:text-base whitespace-nowrap">
-												{formatCurrency(transaction.amount)}
-											</p>
+											<div className="flex shrink-0 flex-col items-end gap-1">
+												<p className="font-semibold text-sm md:text-base whitespace-nowrap">
+													{sign}
+													{formatCurrency(transaction.amount)}
+												</p>
+												<button
+													type="button"
+													aria-label="Edit transaction"
+													onClick={() => {
+														setEditing(transaction);
+														setEditOpen(true);
+													}}
+													className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground">
+													<Pencil size={12} />
+													Edit
+												</button>
+											</div>
 										</li>
 									);
 								})}
@@ -240,6 +282,13 @@ function TransactionPage() {
 					</div>
 				</div>
 			</div>
+
+			<EditTransactionModal
+				transaction={editing}
+				open={editOpen}
+				setOpen={setEditOpen}
+				onUpdated={reload}
+			/>
 		</>
 	);
 }

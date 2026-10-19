@@ -61,16 +61,14 @@ export default function ManageSourcePage() {
 
 	return (
 		<div className="min-h-screen w-full flex flex-col items-center py-6 px-4">
-			<header className="w-full max-w-5xl">
-				<div className="flex items-center gap-2 p-2">
+			<header className="w-full max-w-5xl p-2">
+				<div className="flex items-center gap-2">
 					<BackButton />
-					<div className="flex flex-col space-y-1">
-						<h1 className="font-bold text-2xl">Manage Your Source</h1>
-						<p className="text-sm text-muted-foreground">
-							Manage and monitor your connected data sources
-						</p>
+					<h1 className="font-bold text-2xl">Manage Your Source</h1>
 				</div>
-				</div>
+				<p className="mt-1 pl-1 text-sm text-muted-foreground">
+					Manage and monitor your connected data sources
+				</p>
 			</header>
 
 			{loading ? (

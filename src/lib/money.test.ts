@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toMinor, toMajor } from "./money";
+import { toMinor, toMajor, parseMoneyInput, formatMoneyInput } from "./money";
 
 describe("money conversion", () => {
 	it("converts major to minor units", () => {
@@ -41,5 +41,42 @@ describe("money conversion", () => {
 	it("rejects non-finite input", () => {
 		expect(() => toMinor(Infinity)).toThrow();
 		expect(() => toMinor(NaN)).toThrow();
+	});
+});
+
+describe("parseMoneyInput", () => {
+	it("keeps thousands separators intact (the 300,000 bug)", () => {
+		// The whole point: three hundred THOUSAND, not three hundred.
+		expect(parseMoneyInput("300,000")).toBe(300000);
+		expect(parseMoneyInput("1,250.50")).toBe(1250.5);
+		expect(parseMoneyInput("₦1,000")).toBe(1000);
+	});
+
+	it("parses plain and decimal values", () => {
+		expect(parseMoneyInput("500")).toBe(500);
+		expect(parseMoneyInput("19.99")).toBe(19.99);
+		expect(parseMoneyInput(" 42 ")).toBe(42);
+	});
+
+	it("returns NaN for junk so callers still validate", () => {
+		expect(parseMoneyInput("")).toBeNaN();
+		expect(parseMoneyInput("abc")).toBeNaN();
+		expect(parseMoneyInput("1.2.3")).toBeNaN();
+	});
+});
+
+describe("formatMoneyInput", () => {
+	it("groups the integer part as you type", () => {
+		expect(formatMoneyInput("300000")).toBe("300,000");
+		expect(formatMoneyInput("1000000")).toBe("1,000,000");
+	});
+
+	it("preserves an in-progress decimal", () => {
+		expect(formatMoneyInput("1250.5")).toBe("1,250.5");
+		expect(formatMoneyInput("100.")).toBe("100.");
+	});
+
+	it("is idempotent on already-grouped input", () => {
+		expect(formatMoneyInput("300,000")).toBe("300,000");
 	});
 });

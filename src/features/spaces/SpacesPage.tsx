@@ -177,7 +177,7 @@ export default function SpacesPage() {
 								{isAllView && <Check size={18} className="text-brand" />}
 							</div>
 							<span className="text-sm text-muted-foreground">
-								A combined, view-only overview. No adding or transacting here.
+								A combined, view only overview. No adding or transacting here.
 							</span>
 						</button>
 

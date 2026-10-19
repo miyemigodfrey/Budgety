@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import UniversalModal from "@/components/ui/modal";
 import { updateSource, type Source } from "@/api/sources";
+import { parseMoneyInput, formatMoneyInput, toMajor } from "@/lib/money";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "@/lib/apiError";
 
@@ -22,14 +23,19 @@ export default function EditSourceModal({
 	source,
 	onUpdated,
 }: Props) {
+	// source.balance is BigInt MINOR units (kobo); show it in major units with
+	// separators, and parse it back the same way on save.
+	const toField = (s: Source) =>
+		formatMoneyInput(String(toMajor(BigInt(s.balance ?? 0))));
 	const [name, setName] = useState(source.name);
-	const [balance, setBalance] = useState(String(source.balance ?? 0));
+	const [balance, setBalance] = useState(() => toField(source));
 	const [isSaving, setIsSaving] = useState(false);
 
 	// Re-sync when a different source is opened in the same modal instance.
 	useEffect(() => {
 		setName(source.name);
-		setBalance(String(source.balance ?? 0));
+		setBalance(toField(source));
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [source]);
 
 	const handleUpdate = async () => {
@@ -38,7 +44,7 @@ export default function EditSourceModal({
 			return;
 		}
 
-		const parsedBalance = Number(balance);
+		const parsedBalance = parseMoneyInput(balance);
 		if (balance.trim() === "" || Number.isNaN(parsedBalance)) {
 			toast.error("Please enter a valid balance.");
 			return;
@@ -107,11 +113,9 @@ export default function EditSourceModal({
 					</label>
 					<Input
 						id="balance"
-						type="number"
-						min="0"
-						step="0.01"
+						inputMode="decimal"
 						value={balance}
-						onChange={(e) => setBalance(e.target.value)}
+						onChange={(e) => setBalance(formatMoneyInput(e.target.value))}
 						placeholder="0.00"
 						className="placeholder:text-foreground placeholder:font-semibold"
 					/>

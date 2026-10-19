@@ -15,6 +15,7 @@ import { createTransaction } from "@/api/transaction";
 import { getSources } from "@/api/sources";
 import { getCategories, type Category } from "@/api/categories";
 import { useSpace } from "@/hooks/useSpace";
+import { parseMoneyInput, formatMoneyInput } from "@/lib/money";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "@/lib/apiError";
 
@@ -118,7 +119,7 @@ export default function AddTransactionModal({
 			return;
 		}
 
-		const parsedAmount = Number(amount);
+		const parsedAmount = parseMoneyInput(amount);
 
 		if (!source || !category || !amount) {
 			toast.error("Please fill all required fields.");
@@ -208,11 +209,9 @@ export default function AddTransactionModal({
 						</label>
 						<Input
 							id="amount"
-							type="number"
-							min="0.01"
-							step="0.01"
+							inputMode="decimal"
 							value={amount}
-							onChange={(e) => setAmount(e.target.value)}
+							onChange={(e) => setAmount(formatMoneyInput(e.target.value))}
 							placeholder="₦0.00"
 							className="placeholder:text-lg placeholder:text-muted-foreground w-full"
 						/>

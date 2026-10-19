@@ -6,6 +6,7 @@ import UniversalModal from "@/components/ui/modal";
 import { useState } from "react";
 import { createSource, type Source } from "@/api/sources";
 import { useSpace } from "@/hooks/useSpace";
+import { parseMoneyInput, formatMoneyInput } from "@/lib/money";
 import { toast } from "react-toastify";
 
 type Props = {
@@ -17,7 +18,7 @@ type Props = {
 export default function AddSourceModal({ open, setOpen, onCreated }: Props) {
 	const [name, setName] = useState("");
 	const [balance, setBalance] = useState("");
-	const { activeSpaceId, activeSpace, isAllView } = useSpace();
+	const { activeSpaceId, activeSpace, isAllView, refreshSpaces } = useSpace();
 
 	const handleSubmit = async () => {
 		// A source must live in one space; you can't add from the "All" view.
@@ -31,7 +32,8 @@ export default function AddSourceModal({ open, setOpen, onCreated }: Props) {
 			return;
 		}
 
-		const parsedBalance = Number(balance);
+		// An empty opening balance means "start at zero" — don't force a number.
+		const parsedBalance = balance.trim() === "" ? 0 : parseMoneyInput(balance);
 
 		if (Number.isNaN(parsedBalance) || parsedBalance < 0) {
 			toast.error("Please enter a valid opening balance.");
@@ -47,6 +49,8 @@ export default function AddSourceModal({ open, setOpen, onCreated }: Props) {
 
 			toast.success("Source created successfully");
 			onCreated?.(created);
+			// Keep the Spaces tab's source count current without a manual reload.
+			void refreshSpaces();
 			setName("");
 			setBalance("");
 			setOpen(false);
@@ -98,9 +102,9 @@ export default function AddSourceModal({ open, setOpen, onCreated }: Props) {
 					</label>
 					<Input
 						value={balance}
-						onChange={(e) => setBalance(e.target.value)}
-						type="number"
-						placeholder="£ 0.00"
+						onChange={(e) => setBalance(formatMoneyInput(e.target.value))}
+						inputMode="decimal"
+						placeholder="₦ 0.00"
 						className="placeholder:text-foreground placeholder:font-semibold"
 					/>
 				</div>
