@@ -49,10 +49,20 @@ export function parseMoneyInput(raw: string): number {
  * Format a major-unit number with thousands separators for display inside a
  * text input as the user types (e.g. 300000 → "300,000", 1250.5 → "1,250.5").
  * Keeps a trailing "." or trailing zeros the user is mid-typing intact.
+ *
+ * Anything that isn't a digit or a decimal point is dropped, so letters and
+ * symbols can never enter the field — only numeric input survives.
  */
 export function formatMoneyInput(raw: string): string {
-	const cleaned = raw.replace(/[,\s₦$€£]/g, "");
-	if (cleaned === "" || !/^\d*\.?\d*$/.test(cleaned)) return raw;
+	// Keep digits and dots only; collapse to a single decimal point.
+	let cleaned = raw.replace(/[^\d.]/g, "");
+	const firstDot = cleaned.indexOf(".");
+	if (firstDot !== -1) {
+		cleaned =
+			cleaned.slice(0, firstDot + 1) +
+			cleaned.slice(firstDot + 1).replace(/\./g, "");
+	}
+	if (cleaned === "") return "";
 	const [intPart, decPart] = cleaned.split(".");
 	const grouped = (intPart ?? "").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 	return decPart !== undefined ? `${grouped}.${decPart}` : grouped;

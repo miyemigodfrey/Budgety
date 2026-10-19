@@ -81,7 +81,7 @@ export async function getSourceById(
 	const [transactions, allTransactions] = await Promise.all([
 		db.transaction.findMany({
 			where: { userId, OR: [{ sourceId: id }, { transferTargetId: id }] },
-			orderBy: { date: "desc" },
+			orderBy: [{ date: "desc" }, { createdAt: "desc" }],
 		}),
 		db.transaction.findMany({ where: { userId } }),
 	]);

@@ -1,11 +1,55 @@
 import { TRPCError } from "@trpc/server";
-import { Prisma, type PrismaClient, type TransactionType } from "@prisma/client";
+import {
+	Prisma,
+	type PrismaClient,
+	type TransactionType,
+} from "@prisma/client";
 import { toMajor } from "@/lib/money";
 import { computeOpeningBalance, getMonthWindows } from "./balance";
 import { sourceWhere, txWhere } from "./spaceFilter";
 
 /** A Prisma transaction client (the `tx` inside `$transaction`). */
 type Tx = Prisma.TransactionClient;
+
+/**
+ * Interactive-transaction options for the balance engine.
+ *
+ * The engine does several round-trips inside one transaction (lock sources
+ * FOR UPDATE, read balances, update them). On the free-tier Supabase session
+ * pooler a cold connection can make those round-trips slow, and Prisma's
+ * defaults (maxWait 2s to acquire a connection, 5s total) abort the transaction
+ * with "Transaction not found ... obtained before disconnecting". These generous
+ * timeouts give a cold pooler room to finish instead of failing the write.
+ */
+const TX_OPTS = { maxWait: 15_000, timeout: 30_000 } as const;
+
+/**
+ * True for transient failures where the interactive transaction never
+ * committed — the pooler dropped or recycled the connection, or the transaction
+ * handle expired ("Transaction not found ... obtained before disconnecting",
+ * P2028; "server closed the connection", P1017). Because the balance engine's
+ * transaction is atomic, nothing was persisted, so re-running it once is safe.
+ */
+function isTransientTxError(error: unknown): boolean {
+	if (error instanceof Prisma.PrismaClientKnownRequestError) {
+		return ["P2028", "P1017", "P1001", "P1008"].includes(error.code);
+	}
+	const message = error instanceof Error ? error.message : "";
+	return /Transaction (not found|already closed|API error)|obtained before disconnecting|Can't reach database|Server has closed the connection|Timed out fetching a new connection/i.test(
+		message,
+	);
+}
+
+/** Run a balance-engine transaction, retrying once on a transient drop. */
+async function withTxRetry<T>(run: () => Promise<T>): Promise<T> {
+	try {
+		return await run();
+	} catch (error) {
+		if (!isTransientTxError(error)) throw error;
+		await new Promise((r) => setTimeout(r, 400));
+		return run();
+	}
+}
 
 type CreateInput = {
 	sourceId: string;
@@ -120,63 +164,65 @@ export async function createTransaction(
 	userId: string,
 	input: CreateInput,
 ) {
-	return db.$transaction(async (tx) => {
-		const source = await tx.source.findFirst({
-			where: { id: input.sourceId, userId },
-		});
-		if (!source) throw notFound("Source not found");
-
-		if (input.type === "transfer") {
-			if (!input.transferTargetId) {
-				throw badRequest("transferTargetId is required for transfers");
-			}
-			if (input.transferTargetId === input.sourceId) {
-				throw badRequest("Cannot transfer to the same source");
-			}
-			const target = await tx.source.findFirst({
-				where: { id: input.transferTargetId, userId },
+	return withTxRetry(() =>
+		db.$transaction(async (tx) => {
+			const source = await tx.source.findFirst({
+				where: { id: input.sourceId, userId },
 			});
-			if (!target) throw notFound("Transfer target source not found");
-			// Hard wall: money can't move between spaces.
-			if (target.spaceId !== source.spaceId) {
-				throw badRequest("You can't transfer between different spaces");
+			if (!source) throw notFound("Source not found");
+
+			if (input.type === "transfer") {
+				if (!input.transferTargetId) {
+					throw badRequest("transferTargetId is required for transfers");
+				}
+				if (input.transferTargetId === input.sourceId) {
+					throw badRequest("Cannot transfer to the same source");
+				}
+				const target = await tx.source.findFirst({
+					where: { id: input.transferTargetId, userId },
+				});
+				if (!target) throw notFound("Transfer target source not found");
+				// Hard wall: money can't move between spaces.
+				if (target.spaceId !== source.spaceId) {
+					throw badRequest("You can't transfer between different spaces");
+				}
 			}
-		}
 
-		await lockSources(tx, [input.sourceId, input.transferTargetId]);
+			await lockSources(tx, [input.sourceId, input.transferTargetId]);
 
-		// Guard on OUTFLOW or TRANSFER; strict < so spending to exactly zero is
-		// allowed. No guard on INFLOW.
-		if (input.type === "outflow" || input.type === "transfer") {
-			const balance = await balanceOf(tx, input.sourceId, userId);
-			if (balance < input.amount) {
-				throw badRequest(
-					`Insufficient balance in "${source.name}". Available: ${toMajor(balance)}`,
-				);
+			// Guard on OUTFLOW or TRANSFER; strict < so spending to exactly zero is
+			// allowed. No guard on INFLOW.
+			if (input.type === "outflow" || input.type === "transfer") {
+				const balance = await balanceOf(tx, input.sourceId, userId);
+				if (balance < input.amount) {
+					throw badRequest(
+						`Insufficient balance in "${source.name}". Available: ${toMajor(balance)}`,
+					);
+				}
 			}
-		}
 
-		await applyBalanceChange(
-			tx,
-			input.type,
-			input.sourceId,
-			input.transferTargetId,
-			input.amount,
-		);
+			await applyBalanceChange(
+				tx,
+				input.type,
+				input.sourceId,
+				input.transferTargetId,
+				input.amount,
+			);
 
-		return tx.transaction.create({
-			data: {
-				userId,
-				sourceId: input.sourceId,
-				type: input.type,
-				amount: input.amount,
-				category: input.category,
-				note: input.note ?? "",
-				date: new Date(input.date),
-				transferTargetId: input.transferTargetId ?? null,
-			},
-		});
-	});
+			return tx.transaction.create({
+				data: {
+					userId,
+					sourceId: input.sourceId,
+					type: input.type,
+					amount: input.amount,
+					category: input.category,
+					note: input.note ?? "",
+					date: new Date(input.date),
+					transferTargetId: input.transferTargetId ?? null,
+				},
+			});
+		}, TX_OPTS),
+	);
 }
 
 export async function updateTransaction(
@@ -184,88 +230,96 @@ export async function updateTransaction(
 	userId: string,
 	input: UpdateInput,
 ) {
-	return db.$transaction(async (tx) => {
-		const existing = await tx.transaction.findFirst({
-			where: { id: input.id, userId },
-		});
-		if (!existing) throw notFound("Transaction not found");
-
-		const newType = input.type ?? existing.type;
-		const newSourceId = input.sourceId ?? existing.sourceId;
-		const newAmount = input.amount ?? existing.amount;
-		// ?? means a transfer target can never be cleared via update — preserved
-		// from the original (a known limitation, tracked as a follow-up).
-		const newTargetId = input.transferTargetId ?? existing.transferTargetId;
-
-		const newSource = await tx.source.findFirst({
-			where: { id: newSourceId, userId },
-		});
-		if (!newSource) throw notFound("Source not found");
-
-		if (newType === "transfer") {
-			if (!newTargetId) {
-				throw badRequest("transferTargetId is required for transfers");
-			}
-			if (newTargetId === newSourceId) {
-				throw badRequest("Cannot transfer to the same source");
-			}
-			const target = await tx.source.findFirst({
-				where: { id: newTargetId, userId },
+	return withTxRetry(() =>
+		db.$transaction(async (tx) => {
+			const existing = await tx.transaction.findFirst({
+				where: { id: input.id, userId },
 			});
-			if (!target) throw notFound("Transfer target source not found");
-			// Hard wall: money can't move between spaces.
-			if (target.spaceId !== newSource.spaceId) {
-				throw badRequest("You can't transfer between different spaces");
+			if (!existing) throw notFound("Transaction not found");
+
+			const newType = input.type ?? existing.type;
+			const newSourceId = input.sourceId ?? existing.sourceId;
+			const newAmount = input.amount ?? existing.amount;
+			// ?? means a transfer target can never be cleared via update — preserved
+			// from the original (a known limitation, tracked as a follow-up).
+			const newTargetId = input.transferTargetId ?? existing.transferTargetId;
+
+			const newSource = await tx.source.findFirst({
+				where: { id: newSourceId, userId },
+			});
+			if (!newSource) throw notFound("Source not found");
+
+			if (newType === "transfer") {
+				if (!newTargetId) {
+					throw badRequest("transferTargetId is required for transfers");
+				}
+				if (newTargetId === newSourceId) {
+					throw badRequest("Cannot transfer to the same source");
+				}
+				const target = await tx.source.findFirst({
+					where: { id: newTargetId, userId },
+				});
+				if (!target) throw notFound("Transfer target source not found");
+				// Hard wall: money can't move between spaces.
+				if (target.spaceId !== newSource.spaceId) {
+					throw badRequest("You can't transfer between different spaces");
+				}
 			}
-		}
 
-		await lockSources(tx, [
-			existing.sourceId,
-			existing.transferTargetId,
-			newSourceId,
-			newTargetId,
-		]);
+			await lockSources(tx, [
+				existing.sourceId,
+				existing.transferTargetId,
+				newSourceId,
+				newTargetId,
+			]);
 
-		// Reverse the old effects.
-		await reverseBalanceChange(
-			tx,
-			existing.type,
-			existing.sourceId,
-			existing.transferTargetId,
-			existing.amount,
-		);
+			// Reverse the old effects.
+			await reverseBalanceChange(
+				tx,
+				existing.type,
+				existing.sourceId,
+				existing.transferTargetId,
+				existing.amount,
+			);
 
-		// Guard against the new state. If it fails, throwing rolls back the whole
-		// $transaction — no manual rollback needed. This is also why the reported
-		// figure is now the POST-REVERSE balance (the value actually compared),
-		// unlike the NestJS version which reported a post-rollback value due to
-		// object aliasing.
-		if (newType === "outflow" || newType === "transfer") {
-			const balanceAfterReverse = await balanceOf(tx, newSourceId, userId);
-			if (balanceAfterReverse < newAmount) {
-				throw badRequest(
-					`Insufficient balance in "${newSource.name}" after edit. Available: ${toMajor(balanceAfterReverse)}`,
-				);
+			// Guard against the new state. If it fails, throwing rolls back the whole
+			// $transaction — no manual rollback needed. This is also why the reported
+			// figure is now the POST-REVERSE balance (the value actually compared),
+			// unlike the NestJS version which reported a post-rollback value due to
+			// object aliasing.
+			if (newType === "outflow" || newType === "transfer") {
+				const balanceAfterReverse = await balanceOf(tx, newSourceId, userId);
+				if (balanceAfterReverse < newAmount) {
+					throw badRequest(
+						`Insufficient balance in "${newSource.name}" after edit. Available: ${toMajor(balanceAfterReverse)}`,
+					);
+				}
 			}
-		}
 
-		await applyBalanceChange(tx, newType, newSourceId, newTargetId, newAmount);
+			await applyBalanceChange(
+				tx,
+				newType,
+				newSourceId,
+				newTargetId,
+				newAmount,
+			);
 
-		return tx.transaction.update({
-			where: { id: input.id },
-			data: {
-				...(input.sourceId !== undefined && { sourceId: input.sourceId }),
-				...(input.type !== undefined && { type: input.type }),
-				...(input.amount !== undefined && { amount: input.amount }),
-				...(input.category !== undefined && { category: input.category }),
-				...(input.note !== undefined && { note: input.note }),
-				...(input.date !== undefined && { date: new Date(input.date) }),
-				...(input.transferTargetId !== undefined && {
-					transferTargetId: input.transferTargetId,
-				}),
-			},
-		});
-	});
+			return tx.transaction.update({
+				where: { id: input.id },
+				data: {
+					...(input.sourceId !== undefined && { sourceId: input.sourceId }),
+					...(input.type !== undefined && { type: input.type }),
+					...(input.amount !== undefined && { amount: input.amount }),
+					...(input.category !== undefined && { category: input.category }),
+					...(input.note !== undefined && { note: input.note }),
+					...(input.date !== undefined && { date: new Date(input.date) }),
+					...(input.transferTargetId !== undefined && {
+						transferTargetId: input.transferTargetId,
+					}),
+				},
+			});
+		}, TX_OPTS),
+	);
 }
 
 export async function deleteTransaction(
@@ -273,47 +327,49 @@ export async function deleteTransaction(
 	userId: string,
 	id: string,
 ) {
-	return db.$transaction(async (tx) => {
-		const existing = await tx.transaction.findFirst({
-			where: { id, userId },
-		});
-		if (!existing) throw notFound("Transaction not found");
-
-		await lockSources(tx, [existing.sourceId, existing.transferTargetId]);
-
-		// Guards fire BEFORE the reversal. Reversing an inflow debits the source;
-		// reversing a transfer debits the target. Outflow reversal only adds, so
-		// it needs no guard.
-		if (existing.type === "inflow") {
-			const source = await tx.source.findFirst({
-				where: { id: existing.sourceId },
+	return withTxRetry(() =>
+		db.$transaction(async (tx) => {
+			const existing = await tx.transaction.findFirst({
+				where: { id, userId },
 			});
-			if (source && source.balance < existing.amount) {
-				throw badRequest(
-					`Cannot delete: reversing this inflow would cause negative balance in "${source.name}"`,
-				);
-			}
-		} else if (existing.type === "transfer" && existing.transferTargetId) {
-			const target = await tx.source.findFirst({
-				where: { id: existing.transferTargetId },
-			});
-			if (target && target.balance < existing.amount) {
-				throw badRequest(
-					`Cannot delete: reversing this transfer would cause negative balance in "${target.name}"`,
-				);
-			}
-		}
+			if (!existing) throw notFound("Transaction not found");
 
-		await reverseBalanceChange(
-			tx,
-			existing.type,
-			existing.sourceId,
-			existing.transferTargetId,
-			existing.amount,
-		);
+			await lockSources(tx, [existing.sourceId, existing.transferTargetId]);
 
-		return tx.transaction.delete({ where: { id } });
-	});
+			// Guards fire BEFORE the reversal. Reversing an inflow debits the source;
+			// reversing a transfer debits the target. Outflow reversal only adds, so
+			// it needs no guard.
+			if (existing.type === "inflow") {
+				const source = await tx.source.findFirst({
+					where: { id: existing.sourceId },
+				});
+				if (source && source.balance < existing.amount) {
+					throw badRequest(
+						`Cannot delete: reversing this inflow would cause negative balance in "${source.name}"`,
+					);
+				}
+			} else if (existing.type === "transfer" && existing.transferTargetId) {
+				const target = await tx.source.findFirst({
+					where: { id: existing.transferTargetId },
+				});
+				if (target && target.balance < existing.amount) {
+					throw badRequest(
+						`Cannot delete: reversing this transfer would cause negative balance in "${target.name}"`,
+					);
+				}
+			}
+
+			await reverseBalanceChange(
+				tx,
+				existing.type,
+				existing.sourceId,
+				existing.transferTargetId,
+				existing.amount,
+			);
+
+			return tx.transaction.delete({ where: { id } });
+		}, TX_OPTS),
+	);
 }
 
 // ---- read-side ----
@@ -345,7 +401,12 @@ export async function listTransactions(
 			lte: new Date(filters.endDate),
 		};
 	}
-	return db.transaction.findMany({ where, orderBy: { date: "desc" } });
+	// Secondary createdAt sort so same-day entries keep newest-added-first order
+	// instead of coming back arbitrarily.
+	return db.transaction.findMany({
+		where,
+		orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+	});
 }
 
 export async function getOverview(
@@ -467,8 +528,7 @@ export async function getTrends(
 		const monthTx = inWindow(w);
 		const values = sources.map((source) => {
 			const forSource = monthTx.filter(
-				(tx) =>
-					tx.sourceId === source.id || tx.transferTargetId === source.id,
+				(tx) => tx.sourceId === source.id || tx.transferTargetId === source.id,
 			);
 			const inflow = forSource
 				.filter((tx) => tx.type === "inflow" && tx.sourceId === source.id)

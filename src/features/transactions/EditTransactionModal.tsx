@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useEffect, useMemo, useState } from "react";
+import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import {
 	Select,
 	SelectContent,
@@ -28,6 +28,13 @@ type Props = {
 type Source = { id: string; name: string };
 type TransactionType = "inflow" | "outflow" | "transfer";
 
+/** A Date (or ISO string) → YYYY-MM-DD in local time for a <input type="date">. */
+const toDateInput = (value: Date | string) => {
+	const d = new Date(value);
+	const off = d.getTimezoneOffset();
+	return new Date(d.getTime() - off * 60000).toISOString().split("T")[0]!;
+};
+
 export default function EditTransactionModal({
 	transaction,
 	open,
@@ -41,6 +48,7 @@ export default function EditTransactionModal({
 	const [categories, setCategories] = useState<Category[]>([]);
 	const [source, setSource] = useState("");
 	const [note, setNote] = useState("");
+	const [date, setDate] = useState("");
 	const [transferTarget, setTransferTarget] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -75,6 +83,7 @@ export default function EditTransactionModal({
 		setCategory(transaction.category);
 		setSource(transaction.sourceId);
 		setNote(transaction.note ?? "");
+		setDate(toDateInput(transaction.date));
 		setTransferTarget(transaction.transferTargetId ?? "");
 	}, [transaction]);
 
@@ -89,6 +98,14 @@ export default function EditTransactionModal({
 		() => sources.filter((src) => src.id !== source),
 		[sources, source],
 	);
+
+	// Enter in a text field saves (Selects handle their own Enter).
+	const handleKeyDown = (e: KeyboardEvent) => {
+		if (e.key === "Enter" && !isSubmitting) {
+			e.preventDefault();
+			handleSubmit();
+		}
+	};
 
 	const handleSubmit = async () => {
 		if (!transaction) return;
@@ -110,6 +127,10 @@ export default function EditTransactionModal({
 			toast.error("You cannot transfer to the same source.");
 			return;
 		}
+		if (!date) {
+			toast.error("Please pick a date.");
+			return;
+		}
 
 		try {
 			setIsSubmitting(true);
@@ -119,6 +140,7 @@ export default function EditTransactionModal({
 				amount: parsedAmount,
 				category,
 				note,
+				date,
 				...(activeTab === "transfer" && { transferTargetId: transferTarget }),
 			});
 			toast.success("Transaction updated!");
@@ -179,8 +201,25 @@ export default function EditTransactionModal({
 							inputMode="decimal"
 							value={amount}
 							onChange={(e) => setAmount(formatMoneyInput(e.target.value))}
+							onKeyDown={handleKeyDown}
 							placeholder="₦0.00"
 							className="placeholder:text-lg placeholder:text-muted-foreground w-full"
+						/>
+					</div>
+
+					<div className="flex flex-col items-start py-2 space-y-2 w-full">
+						<label
+							htmlFor="edit-date"
+							className="text-sm font-medium text-foreground">
+							Date
+						</label>
+						<Input
+							id="edit-date"
+							type="date"
+							value={date}
+							onChange={(e) => setDate(e.target.value)}
+							onKeyDown={handleKeyDown}
+							className="w-full"
 						/>
 					</div>
 
@@ -227,6 +266,7 @@ export default function EditTransactionModal({
 							placeholder="Optional note"
 							value={note}
 							onChange={(e) => setNote(e.target.value)}
+							onKeyDown={handleKeyDown}
 							className="placeholder:text-lg placeholder:text-muted-foreground w-full"
 						/>
 					</div>

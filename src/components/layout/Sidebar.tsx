@@ -2,14 +2,18 @@
 
 import Budgety from "@/assets/budgety.png";
 import { Link, useLocation } from "react-router-dom";
+import { signOut } from "next-auth/react";
+import { LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isNavItemActive, navItems } from "@/lib/navItems";
 
 export default function Sidebar() {
 	const location = useLocation();
 
+	const logout = () => signOut({ callbackUrl: "/login" });
+
 	return (
-		<div className="w-full h-full bg-card text-brand">
+		<div className="flex h-full w-full flex-col bg-card text-brand">
 			{/* Logo */}
 			<div className="flex items-start mb-2">
 				<img src={Budgety.src} alt="Budgety Logo" className="h-24 w-auto" />
@@ -36,6 +40,16 @@ export default function Sidebar() {
 					);
 				})}
 			</nav>
+
+			{/* Log out — pinned to the bottom */}
+			<button
+				type="button"
+				onClick={logout}
+				aria-label="Log out"
+				className="mt-auto flex w-full items-center gap-3 rounded-lg px-4 py-3 text-danger transition hover:bg-danger-surface">
+				<LogOut size={18} />
+				<span>Log out</span>
+			</button>
 		</div>
 	);
 }

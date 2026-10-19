@@ -79,4 +79,11 @@ describe("formatMoneyInput", () => {
 	it("is idempotent on already-grouped input", () => {
 		expect(formatMoneyInput("300,000")).toBe("300,000");
 	});
+
+	it("drops letters and stray symbols so only numbers survive", () => {
+		expect(formatMoneyInput("12a3")).toBe("123");
+		expect(formatMoneyInput("abc")).toBe("");
+		expect(formatMoneyInput("1.2.3")).toBe("1.23");
+		expect(formatMoneyInput("50k")).toBe("50");
+	});
 });

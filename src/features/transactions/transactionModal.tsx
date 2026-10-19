@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useEffect, useMemo, useState } from "react";
+import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import {
 	Select,
 	SelectContent,
@@ -29,6 +29,13 @@ type Source = { id: string; name: string };
 
 type TransactionType = "inflow" | "outflow" | "transfer";
 
+/** Local "today" as YYYY-MM-DD for a <input type="date"> default. */
+const todayStr = () => {
+	const d = new Date();
+	const off = d.getTimezoneOffset();
+	return new Date(d.getTime() - off * 60000).toISOString().split("T")[0]!;
+};
+
 export default function AddTransactionModal({
 	open,
 	setOpen,
@@ -42,6 +49,7 @@ export default function AddTransactionModal({
 	const [categories, setCategories] = useState<Category[]>([]);
 	const [source, setSource] = useState("");
 	const [note, setNote] = useState("");
+	const [date, setDate] = useState(todayStr);
 	const [transferTarget, setTransferTarget] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isLoadingSources, setIsLoadingSources] = useState(false);
@@ -109,7 +117,16 @@ export default function AddTransactionModal({
 		setCategory("");
 		setSource("");
 		setNote("");
+		setDate(todayStr());
 		setTransferTarget("");
+	};
+
+	// Enter in a text field saves (Selects handle their own Enter).
+	const handleKeyDown = (e: KeyboardEvent) => {
+		if (e.key === "Enter" && !isSubmitting) {
+			e.preventDefault();
+			handleSubmit();
+		}
 	};
 
 	const handleSubmit = async () => {
@@ -141,6 +158,11 @@ export default function AddTransactionModal({
 			return;
 		}
 
+		if (!date) {
+			toast.error("Please pick a date.");
+			return;
+		}
+
 		try {
 			setIsSubmitting(true);
 
@@ -150,7 +172,7 @@ export default function AddTransactionModal({
 				amount: parsedAmount,
 				category,
 				note,
-				date: new Date().toISOString().split("T")[0]!,
+				date,
 				...(activeTab === "transfer" && {
 					transferTargetId: transferTarget,
 				}),
@@ -212,8 +234,25 @@ export default function AddTransactionModal({
 							inputMode="decimal"
 							value={amount}
 							onChange={(e) => setAmount(formatMoneyInput(e.target.value))}
+							onKeyDown={handleKeyDown}
 							placeholder="₦0.00"
 							className="placeholder:text-lg placeholder:text-muted-foreground w-full"
+						/>
+					</div>
+
+					<div className="flex flex-col items-start py-2 space-y-2 w-full">
+						<label
+							htmlFor="date"
+							className="text-sm font-medium text-foreground">
+							Date
+						</label>
+						<Input
+							id="date"
+							type="date"
+							value={date}
+							onChange={(e) => setDate(e.target.value)}
+							onKeyDown={handleKeyDown}
+							className="w-full"
 						/>
 					</div>
 
@@ -272,6 +311,7 @@ export default function AddTransactionModal({
 							placeholder="Optional note"
 							value={note}
 							onChange={(e) => setNote(e.target.value)}
+							onKeyDown={handleKeyDown}
 							className="placeholder:text-lg placeholder:text-muted-foreground w-full"
 						/>
 					</div>

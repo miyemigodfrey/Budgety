@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Ellipsis, Wallet } from "lucide-react";
+import { ArrowLeft, ArrowUpDown, Pencil, Wallet } from "lucide-react";
 import { TotalTransactionBarChart } from "@/components/charts/TransactionChart";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -9,6 +9,8 @@ import {
 	getSummary,
 	type SourceSummary,
 } from "@/api/sources";
+import EditTransactionModal from "@/features/transactions/EditTransactionModal";
+import type { TransactionDto } from "@/api/transaction";
 import { useEffect, useState } from "react";
 import { formatDate } from "@/lib/formatDate";
 import { formatCurrency } from "@/lib/formatCurrency";
@@ -24,6 +26,10 @@ function SourcesIdPage() {
 	const [summary, setSummary] = useState<SourceSummary | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+	const [editing, setEditing] = useState<TransactionDto | null>(null);
+	const [editOpen, setEditOpen] = useState(false);
+	const [reloadKey, setReloadKey] = useState(0);
 
 	const getPeriodLabel = () => {
 		switch (period) {
@@ -59,7 +65,7 @@ function SourcesIdPage() {
 		};
 
 		fetchData();
-	}, [id, period]);
+	}, [id, period, reloadKey]);
 
 	if (loading) {
 		return (
@@ -173,7 +179,18 @@ function SourcesIdPage() {
 								Recent Transactions
 							</h2>
 
-							<Ellipsis className="text-muted-foreground" aria-hidden="true" />
+							{data.transactions.length > 0 && (
+								<button
+									type="button"
+									onClick={() =>
+										setSortDir((d) => (d === "desc" ? "asc" : "desc"))
+									}
+									className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition hover:bg-muted"
+									aria-label={`Sort by date ${sortDir === "desc" ? "ascending" : "descending"}`}>
+									<ArrowUpDown size={13} />
+									{sortDir === "desc" ? "Newest" : "Oldest"}
+								</button>
+							)}
 						</div>
 						{data.transactions.length === 0 && (
 							<EmptyState
@@ -183,44 +200,68 @@ function SourcesIdPage() {
 							/>
 						)}
 						<ul>
-							{data?.transactions.map((sourcetrans) => {
-								return (
-									<li
-										key={sourcetrans.id}
-										className={cn(
-											"pb-4 pt-2 border-b border-border flex items-start justify-between gap-3",
-											sourcetrans.type === "inflow"
-												? "text-success"
-												: "text-danger",
-										)}>
-										<div className="flex items-start gap-3">
-											<div
-												className={cn(
-													"flex items-center justify-center w-10 h-10 rounded-full",
-													sourcetrans.type === "inflow"
-														? "bg-success-surface"
-														: "bg-danger-surface",
-												)}>
-												<Wallet className=" w-5 h-5" />
+							{[...data.transactions]
+								.sort((a, b) => {
+									const byDate =
+										new Date(a.date).getTime() - new Date(b.date).getTime();
+									const key =
+										byDate !== 0
+											? byDate
+											: new Date(a.createdAt).getTime() -
+												new Date(b.createdAt).getTime();
+									return sortDir === "desc" ? -key : key;
+								})
+								.map((sourcetrans) => {
+									return (
+										<li
+											key={sourcetrans.id}
+											className={cn(
+												"pb-4 pt-2 border-b border-border flex items-start justify-between gap-3",
+												sourcetrans.type === "inflow"
+													? "text-success"
+													: "text-danger",
+											)}>
+											<div className="flex items-start gap-3">
+												<div
+													className={cn(
+														"flex items-center justify-center w-10 h-10 rounded-full",
+														sourcetrans.type === "inflow"
+															? "bg-success-surface"
+															: "bg-danger-surface",
+													)}>
+													<Wallet className=" w-5 h-5" />
+												</div>
+
+												<div className="space-y-1">
+													<p className="font-semibold text-sm md:text-base">
+														{sourcetrans.category}
+													</p>
+
+													<p className="text-xs md:text-sm text-muted-foreground">
+														{formatDate(sourcetrans.date)}
+													</p>
+												</div>
 											</div>
 
-											<div className="space-y-1">
-												<p className="font-semibold text-sm md:text-base">
-													{sourcetrans.category}
+											<div className="flex flex-col items-end gap-1">
+												<p className=" font-semibold text-sm md:text-base whitespace-nowrap">
+													{formatCurrency(sourcetrans.amount, data?.currency)}
 												</p>
-
-												<p className="text-xs md:text-sm text-muted-foreground">
-													Added on {formatDate(sourcetrans.createdAt)}
-												</p>
+												<button
+													type="button"
+													aria-label="Edit transaction"
+													onClick={() => {
+														setEditing(sourcetrans as TransactionDto);
+														setEditOpen(true);
+													}}
+													className="inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] text-muted-foreground transition hover:bg-muted hover:text-foreground">
+													<Pencil size={10} />
+													Edit
+												</button>
 											</div>
-										</div>
-
-										<p className=" font-semibold text-sm md:text-base whitespace-nowrap">
-											{formatCurrency(sourcetrans.amount, data?.currency)}
-										</p>
-									</li>
-								);
-							})}
+										</li>
+									);
+								})}
 						</ul>
 					</div>
 
@@ -230,6 +271,13 @@ function SourcesIdPage() {
 					</div>
 				</div>
 			</div>
+
+			<EditTransactionModal
+				transaction={editing}
+				open={editOpen}
+				setOpen={setEditOpen}
+				onUpdated={() => setReloadKey((k) => k + 1)}
+			/>
 		</>
 	);
 }

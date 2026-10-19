@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, User, Wallet } from "lucide-react";
+import { ArrowUpDown, Pencil, User, Wallet } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import EditTransactionModal from "./EditTransactionModal";
 import { cn } from "@/lib/utils";
@@ -39,6 +39,17 @@ function TransactionPage() {
 	const [status, setStatus] = useState<Status>("loading");
 	const [editing, setEditing] = useState<TransactionDto | null>(null);
 	const [editOpen, setEditOpen] = useState(false);
+	const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+	// Sort by transaction date, then by when it was added (same-day tie-break).
+	const sortedTransactions = [...transactions].sort((a, b) => {
+		const byDate = new Date(a.date).getTime() - new Date(b.date).getTime();
+		const key =
+			byDate !== 0
+				? byDate
+				: new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+		return sortDir === "desc" ? -key : key;
+	});
 
 	const [reloadKey, setReloadKey] = useState(0);
 
@@ -134,9 +145,23 @@ function TransactionPage() {
 					{/* LEFT SECTION */}
 					<div className="lg:col-span-2 w-full">
 						<div className="w-full bg-card rounded-xl shadow-md">
-							<h2 className="p-4 font-semibold text-foreground">
-								Recent Transactions
-							</h2>
+							<div className="flex items-center justify-between p-4">
+								<h2 className="font-semibold text-foreground">
+									Recent Transactions
+								</h2>
+								{status === "ready" && transactions.length > 0 && (
+									<button
+										type="button"
+										onClick={() =>
+											setSortDir((d) => (d === "desc" ? "asc" : "desc"))
+										}
+										className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition hover:bg-muted"
+										aria-label={`Sort by date ${sortDir === "desc" ? "ascending" : "descending"}`}>
+										<ArrowUpDown size={13} />
+										{sortDir === "desc" ? "Newest" : "Oldest"}
+									</button>
+								)}
+							</div>
 
 							{status === "loading" && (
 								<div className="px-4 pb-4 space-y-3">
@@ -166,7 +191,7 @@ function TransactionPage() {
 							)}
 
 							<ul className="overflow-y-auto max-h-125">
-								{transactions.map((transaction) => {
+								{sortedTransactions.map((transaction) => {
 									const source = sources.find(
 										(src) => src.id === transaction.sourceId,
 									);
@@ -216,7 +241,7 @@ function TransactionPage() {
 													</p>
 
 													<p className="text-xs md:text-sm text-muted-foreground">
-														Added on {formatDate(transaction.createdAt)}
+														{formatDate(transaction.date)}
 													</p>
 
 													<div className="flex flex-wrap items-center gap-2">

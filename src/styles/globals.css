@@ -28,7 +28,7 @@
 	--muted-foreground: oklch(0.556 0 0);
 	--accent: oklch(0.97 0 0);
 	--accent-foreground: oklch(0.205 0 0);
-	--destructive: oklch(0.577 0.245 27.325);
+	--destructive: oklch(0.6 0.155 15);
 	--border: oklch(0.922 0 0);
 	--input: oklch(0.922 0 0);
 	--ring: oklch(0.708 0 0);
@@ -62,8 +62,8 @@
 	--success: oklch(52.7% 0.154 150.069); /* green-700 — inflow */
 	--success-surface: oklch(92.5% 0.084 155.995); /* green-200 */
 
-	--danger: oklch(50.5% 0.213 27.518); /* red-700 — outflow */
-	--danger-surface: oklch(88.5% 0.062 18.334); /* red-200 */
+	--danger: oklch(55% 0.145 15); /* cooler, softer rose-red — outflow */
+	--danger-surface: oklch(91% 0.045 13); /* muted rose-red tint */
 }
 
 /* Kept out of the :root shorthand block so .dark can override it. Without
@@ -148,7 +148,7 @@ body {
 	--muted-foreground: oklch(0.708 0 0);
 	--accent: oklch(0.269 0 0);
 	--accent-foreground: oklch(0.985 0 0);
-	--destructive: oklch(0.704 0.191 22.216);
+	--destructive: oklch(0.72 0.135 14);
 	--border: oklch(1 0 0 / 10%);
 	--input: oklch(1 0 0 / 15%);
 	--ring: oklch(0.556 0 0);
@@ -180,6 +180,6 @@ body {
 	--success: oklch(79.2% 0.209 151.711); /* green-400 */
 	--success-surface: oklch(0.35 0.09 152);
 
-	--danger: oklch(70.4% 0.191 22.216); /* red-400 */
-	--danger-surface: oklch(0.36 0.11 25);
+	--danger: oklch(72% 0.135 14); /* cooler, softer rose-red */
+	--danger-surface: oklch(0.36 0.075 16);
 }
