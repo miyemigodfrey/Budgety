@@ -29,5 +29,6 @@ export const config = {
 		"/report/:path*",
 		"/reconcilation/:path*",
 		"/setting/:path*",
+		"/profile/:path*",
 	],
 };

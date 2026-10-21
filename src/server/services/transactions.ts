@@ -5,7 +5,11 @@ import {
 	type TransactionType,
 } from "@prisma/client";
 import { toMajor } from "@/lib/money";
-import { computeOpeningBalance, getMonthWindows } from "./balance";
+import {
+	computeOpeningBalance,
+	getWindows,
+	type Granularity,
+} from "./balance";
 import { sourceWhere, txWhere } from "./spaceFilter";
 
 /** A Prisma transaction client (the `tx` inside `$transaction`). */
@@ -494,13 +498,14 @@ export async function getTrends(
 	userId: string,
 	months: number,
 	spaceId?: string,
+	granularity: Granularity = "monthly",
 ) {
 	const boundedMonths = Math.min(Math.max(months, 1), 24);
 	const [sources, transactions] = await Promise.all([
 		db.source.findMany({ where: sourceWhere(userId, spaceId) }),
 		db.transaction.findMany({ where: txWhere(userId, spaceId) }),
 	]);
-	const windows = getMonthWindows(boundedMonths);
+	const windows = getWindows(granularity, boundedMonths);
 
 	const inWindow = (w: (typeof windows)[number]) =>
 		transactions.filter((tx) => {

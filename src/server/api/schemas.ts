@@ -25,6 +25,15 @@ export const registerSchema = z
 	})
 	.strict();
 
+// ---- account / app lock ----
+export const pinSchema = z
+	.object({ pin: z.string().regex(/^\d{4}$/, "PIN must be 4 digits") })
+	.strict();
+
+export const updateNameSchema = z
+	.object({ name: z.string().min(2) })
+	.strict();
+
 // ---- spaces ----
 // Scope for read procedures. Absent spaceId = the "All" view (no filter).
 export const spaceScopeSchema = z
@@ -137,9 +146,17 @@ export const updateSettingsSchema = z
 	.strict();
 
 // ---- shared query params (previously unvalidated) ----
+export const granularitySchema = z.enum([
+	"weekly",
+	"biweekly",
+	"monthly",
+	"yearly",
+]);
+
 export const monthsSchema = z
 	.object({
 		months: z.coerce.number().int().default(6),
+		granularity: granularitySchema.optional(),
 		spaceId: z.string().optional(),
 	})
 	.strict()

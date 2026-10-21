@@ -40,6 +40,9 @@ model User {
   // Nullable only to satisfy NextAuth's User shape; credentials users always
   // have one. bcryptjs hash, cost 10.
   password  String?
+  // 4-digit App Lock PIN, bcryptjs hash (cost 10). Null = no PIN set. This is a
+  // convenience lock over an already-authenticated session, not a credential.
+  pin       String?
   createdAt DateTime @default(now())
 
   spaces          Space[]

@@ -10,7 +10,15 @@ import {
 	type SourceSummary,
 } from "@/api/sources";
 import EditTransactionModal from "@/features/transactions/EditTransactionModal";
-import type { TransactionDto } from "@/api/transaction";
+import {
+	getTrends,
+	type Granularity,
+	type TransactionDto,
+} from "@/api/transaction";
+import {
+	GranularitySelect,
+	granularityLabel,
+} from "@/components/charts/GranularitySelect";
 import { useEffect, useState } from "react";
 import { formatDate } from "@/lib/formatDate";
 import { formatCurrency } from "@/lib/formatCurrency";
@@ -30,6 +38,10 @@ function SourcesIdPage() {
 	const [editing, setEditing] = useState<TransactionDto | null>(null);
 	const [editOpen, setEditOpen] = useState(false);
 	const [reloadKey, setReloadKey] = useState(0);
+	const [granularity, setGranularity] = useState<Granularity>("monthly");
+	const [chartSeries, setChartSeries] = useState<
+		{ period: string; total: bigint }[]
+	>([]);
 
 	const getPeriodLabel = () => {
 		switch (period) {
@@ -66,6 +78,29 @@ function SourcesIdPage() {
 
 		fetchData();
 	}, [id, period, reloadKey]);
+
+	// Per-source chart series, pulled from the space-wide trends (reuses the
+	// backend's period windows) and narrowed to this source. Fixes the chart
+	// that previously rendered with no data.
+	useEffect(() => {
+		if (!id) return;
+		let cancelled = false;
+		getTrends(6, granularity)
+			.then((trends) => {
+				if (cancelled) return;
+				setChartSeries(
+					trends.bySource.map((w) => ({
+						period: w.period,
+						total:
+							w.values.find((v) => v.sourceId === id)?.total ?? BigInt(0),
+					})),
+				);
+			})
+			.catch((e) => console.error("Failed to load source chart:", e));
+		return () => {
+			cancelled = true;
+		};
+	}, [id, granularity, reloadKey]);
 
 	if (loading) {
 		return (
@@ -266,8 +301,17 @@ function SourcesIdPage() {
 					</div>
 
 					{/* RIGHT SECTION */}
-					<div className="hidden md:block lg:col-span-3 w-full h-full">
-						<TotalTransactionBarChart />
+					<div className="lg:col-span-3 w-full h-full">
+						<div className="mb-2 flex items-center justify-end">
+							<GranularitySelect
+								value={granularity}
+								onChange={setGranularity}
+							/>
+						</div>
+						<TotalTransactionBarChart
+							series={chartSeries}
+							description={`${granularityLabel(granularity)} totals for ${data?.name ?? "this source"}`}
+						/>
 					</div>
 				</div>
 			</div>

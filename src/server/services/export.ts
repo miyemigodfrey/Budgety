@@ -1,5 +1,5 @@
 import type { PrismaClient, Transaction } from "@prisma/client";
-import { getMonthWindows } from "./balance";
+import { getWindows, type Granularity } from "./balance";
 import { sourceWhere, txWhere } from "./spaceFilter";
 
 /** JSON summary for the Reports page. */
@@ -8,6 +8,7 @@ export async function getSummary(
 	userId: string,
 	months: number,
 	spaceId?: string,
+	granularity: Granularity = "monthly",
 ) {
 	const boundedMonths = Math.min(Math.max(months, 1), 24);
 	const [sources, transactions] = await Promise.all([
@@ -37,7 +38,7 @@ export async function getSummary(
 	const monthlyInflow = sumType(monthly, "inflow");
 	const monthlyOutflow = sumType(monthly, "outflow");
 
-	const windows = getMonthWindows(boundedMonths);
+	const windows = getWindows(granularity, boundedMonths);
 	const inWindow = (w: (typeof windows)[number]) =>
 		transactions.filter((tx) => {
 			const d = new Date(tx.date);

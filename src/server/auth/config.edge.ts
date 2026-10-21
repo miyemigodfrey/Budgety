@@ -19,7 +19,9 @@ export const authConfigEdge = {
 	providers: [],
 	session: {
 		strategy: "jwt",
-		maxAge: 7 * 24 * 60 * 60, // 7 days, matching the old JWT_EXPIRATION
+		// 30 days so the 4-digit App Lock PIN is the everyday unlock; a full
+		// email+password login is only needed after this window or "Forgot PIN".
+		maxAge: 30 * 24 * 60 * 60,
 	},
 	callbacks: {
 		jwt: ({ token, user }) => {

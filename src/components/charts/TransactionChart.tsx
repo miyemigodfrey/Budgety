@@ -48,8 +48,10 @@ const totalChartConfig = {
 
 export function TotalTransactionBarChart({
 	series,
+	description = "Totals per period",
 }: {
 	series?: TotalSeries;
+	description?: string;
 }) {
 	const totalData = (series ?? []).map((item) => ({
 		month: formatPeriod(item.period),
@@ -62,7 +64,7 @@ export function TotalTransactionBarChart({
 		<Card className="border border-border drop-shadow-xl">
 			<CardHeader>
 				<CardTitle>Total Transactions</CardTitle>
-				<CardDescription>Monthly totals</CardDescription>
+				<CardDescription>{description}</CardDescription>
 			</CardHeader>
 
 			<CardContent>
@@ -76,7 +78,7 @@ export function TotalTransactionBarChart({
 								tickLine={false}
 								axisLine={false}
 								tickMargin={10}
-								tickFormatter={(v) => v.slice(0, 3)}
+								tickFormatter={(v) => String(v)}
 							/>
 
 							<ChartTooltip
@@ -174,7 +176,7 @@ export function TransactionBreakdownChart({
 							tickLine={false}
 							axisLine={false}
 							tickMargin={10}
-							tickFormatter={(v) => String(v).slice(0, 3)}
+							tickFormatter={(v) => String(v)}
 						/>
 
 						<ChartTooltip

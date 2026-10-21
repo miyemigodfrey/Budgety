@@ -1,6 +1,13 @@
 "use client";
 
-import { ArrowUpDown, Pencil, User, Wallet } from "lucide-react";
+import {
+	ArrowUpDown,
+	ChevronLeft,
+	ChevronRight,
+	Pencil,
+	User,
+	Wallet,
+} from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import EditTransactionModal from "./EditTransactionModal";
 import { cn } from "@/lib/utils";
@@ -8,6 +15,10 @@ import { TableDemo } from "../dashboard/DashboardPage";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { TotalTransactionBarChart } from "@/components/charts/TransactionChart";
+import {
+	GranularitySelect,
+	granularityLabel,
+} from "@/components/charts/GranularitySelect";
 import { useCallback, useEffect, useState } from "react";
 import { formatDate } from "@/lib/formatDate";
 import { formatCurrency } from "@/lib/formatCurrency";
@@ -15,7 +26,11 @@ import { EmptyState, ErrorState } from "@/components/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Status } from "@/lib/status";
 
-import { getTransactions, type TransactionDto } from "@/api/transaction";
+import {
+	getTransactions,
+	type Granularity,
+	type TransactionDto,
+} from "@/api/transaction";
 import {
 	getTransactionOverview,
 	type TransactionOverviewDto,
@@ -40,6 +55,9 @@ function TransactionPage() {
 	const [editing, setEditing] = useState<TransactionDto | null>(null);
 	const [editOpen, setEditOpen] = useState(false);
 	const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+	const [granularity, setGranularity] = useState<Granularity>("monthly");
+	const [page, setPage] = useState(1);
+	const PAGE_SIZE = 10;
 
 	// Sort by transaction date, then by when it was added (same-day tie-break).
 	const sortedTransactions = [...transactions].sort((a, b) => {
@@ -50,6 +68,13 @@ function TransactionPage() {
 				: new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
 		return sortDir === "desc" ? -key : key;
 	});
+
+	const pageCount = Math.max(1, Math.ceil(sortedTransactions.length / PAGE_SIZE));
+	const currentPage = Math.min(page, pageCount);
+	const pagedTransactions = sortedTransactions.slice(
+		(currentPage - 1) * PAGE_SIZE,
+		currentPage * PAGE_SIZE,
+	);
 
 	const [reloadKey, setReloadKey] = useState(0);
 
@@ -63,22 +88,16 @@ function TransactionPage() {
 
 		async function fetchData() {
 			try {
-				const [
-					transactionData,
-					sourceData,
-					transactionOverviewData,
-					summaryData,
-				] = await Promise.all([
-					getTransactions(),
-					getSources(),
-					getTransactionOverview(),
-					getSummary(6),
-				]);
+				const [transactionData, sourceData, transactionOverviewData] =
+					await Promise.all([
+						getTransactions(),
+						getSources(),
+						getTransactionOverview(),
+					]);
 				if (cancelled) return;
 				setTransaction(transactionData);
 				setSources(sourceData);
 				setTransactionOverview(transactionOverviewData);
-				setSummary(summaryData);
 				setStatus("ready");
 			} catch (error) {
 				if (cancelled) return;
@@ -92,6 +111,23 @@ function TransactionPage() {
 			cancelled = true;
 		};
 	}, [reloadKey]);
+
+	// The chart refetches on its own when the granularity changes, so toggling
+	// it doesn't reload the whole transaction list.
+	useEffect(() => {
+		let cancelled = false;
+		getSummary(6, granularity)
+			.then((data) => !cancelled && setSummary(data))
+			.catch((e) => console.error("Failed to load chart summary:", e));
+		return () => {
+			cancelled = true;
+		};
+	}, [granularity, reloadKey]);
+
+	// Reset to the first page when the ordering or the underlying data changes.
+	useEffect(() => {
+		setPage(1);
+	}, [sortDir, transactions.length]);
 
 	return (
 		<>
@@ -191,7 +227,7 @@ function TransactionPage() {
 							)}
 
 							<ul className="overflow-y-auto max-h-125">
-								{sortedTransactions.map((transaction) => {
+								{pagedTransactions.map((transaction) => {
 									const source = sources.find(
 										(src) => src.id === transaction.sourceId,
 									);
@@ -286,6 +322,33 @@ function TransactionPage() {
 									);
 								})}
 							</ul>
+
+							{status === "ready" && sortedTransactions.length > 0 && (
+								<div className="flex items-center justify-between gap-2 border-t border-border px-4 py-3">
+									<span className="text-xs text-muted-foreground">
+										Page {currentPage} of {pageCount} · {sortedTransactions.length}{" "}
+										total
+									</span>
+									<div className="flex items-center gap-1">
+										<button
+											type="button"
+											aria-label="Previous page"
+											disabled={currentPage <= 1}
+											onClick={() => setPage((p) => Math.max(1, p - 1))}
+											className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition hover:bg-muted disabled:opacity-40">
+											<ChevronLeft size={15} />
+										</button>
+										<button
+											type="button"
+											aria-label="Next page"
+											disabled={currentPage >= pageCount}
+											onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+											className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition hover:bg-muted disabled:opacity-40">
+											<ChevronRight size={15} />
+										</button>
+									</div>
+								</div>
+							)}
 						</div>
 
 						{/* Buttons */}
@@ -299,10 +362,17 @@ function TransactionPage() {
 						</div>
 					</div>
 
-					{/* RIGHT SECTION */}
-					<div className="hidden md:block lg:col-span-3 w-full h-full">
+					{/* RIGHT SECTION — visible on all sizes now */}
+					<div className="lg:col-span-3 w-full h-full">
+						<div className="mb-2 flex items-center justify-end">
+							<GranularitySelect
+								value={granularity}
+								onChange={setGranularity}
+							/>
+						</div>
 						<TotalTransactionBarChart
 							series={summary?.charts.totalTransactionsSeries}
+							description={`${granularityLabel(granularity)} totals`}
 						/>
 					</div>
 				</div>

@@ -30,6 +30,7 @@ export const transactionsRouter = createTRPCRouter({
 				ctx.session.user.id,
 				input?.months ?? 6,
 				input?.spaceId,
+				input?.granularity,
 			),
 		),
 

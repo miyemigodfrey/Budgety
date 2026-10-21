@@ -4,7 +4,6 @@ import {
 	Settings,
 	SunMoon,
 	FileText,
-	LockKeyhole,
 	CalendarSync,
 	ChevronRight,
 	LogOut,
@@ -20,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "@/lib/apiError";
+import { getMe, type Me } from "@/api/account";
 import {
 	getSettings,
 	updateSettings,
@@ -33,6 +33,7 @@ export default function SettingPage() {
 	const logout = () => signOut({ callbackUrl: "/login" });
 	const { setTheme } = useTheme();
 	const [settings, setSettings] = useState<UserSettings | null>(null);
+	const [me, setMe] = useState<Me | null>(null);
 
 	useEffect(() => {
 		getSettings()
@@ -41,6 +42,9 @@ export default function SettingPage() {
 				console.error("Failed to load settings:", error);
 				toast.error(getErrorMessage(error, "Couldn't load your settings."));
 			});
+		getMe()
+			.then(setMe)
+			.catch((error) => console.error("Failed to load profile:", error));
 	}, []);
 
 	const handleToggle = async (key: ToggleKey, value: boolean) => {
@@ -78,6 +82,31 @@ export default function SettingPage() {
 			</header>
 
 			<div className=" w-full flex flex-col items-start gap-4 mt-8">
+				{/* Profile */}
+				<Link
+					to="/profile"
+					aria-label="Open profile"
+					className="bg-card w-full flex items-center gap-3 rounded-xl p-3 shadow-xl hover:bg-muted/50 transition">
+					<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-lg font-bold text-brand-foreground">
+						{me?.name?.trim()?.[0]?.toUpperCase() ?? "?"}
+					</div>
+					<div className="min-w-0 flex-1">
+						{me ? (
+							<>
+								<p className="truncate text-sm font-semibold text-foreground">
+									{me.name}
+								</p>
+								<p className="truncate text-xs text-muted-foreground">
+									{me.email}
+								</p>
+							</>
+						) : (
+							<Skeleton className="h-4 w-32" />
+						)}
+					</div>
+					<ChevronRight className="text-muted-foreground" />
+				</Link>
+
 				<div className="bg-card w-full flex items-center justify-between rounded-xl pt-4.5 pb-2 px-1.5 space-y-2 shadow-xl ">
 					<div className="flex items-center space-x-2">
 						<FileText className="size-4.5 text-brand" />
@@ -101,23 +130,6 @@ export default function SettingPage() {
 						<Switch
 							checked={settings.dailyReminder}
 							onCheckedChange={(value) => handleToggle("dailyReminder", value)}
-						/>
-					) : (
-						<Skeleton className="h-5 w-9 rounded-full" />
-					)}
-				</div>
-
-				<div className="bg-card w-full flex items-center justify-between rounded-xl pt-4.5 pb-2 px-1.5 space-y-2 shadow-xl ">
-					<div className="flex items-center space-x-2">
-						<LockKeyhole className="size-4.5 text-brand" />
-						<p className="text-sm font-semibold text-foreground">
-							App Lock (PIN)
-						</p>
-					</div>
-					{settings ? (
-						<Switch
-							checked={settings.appLockEnabled}
-							onCheckedChange={(value) => handleToggle("appLockEnabled", value)}
 						/>
 					) : (
 						<Skeleton className="h-5 w-9 rounded-full" />

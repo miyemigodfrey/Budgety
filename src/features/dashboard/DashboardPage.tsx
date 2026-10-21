@@ -4,7 +4,14 @@ import { Button } from "@/components/ui/button";
 import { FileText, Plus, Wallet } from "lucide-react";
 import AddSourceModal from "@/features/addsource/sourceModal";
 import budgetydash from "@/assets/budgety-dashboard.png";
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, ErrorState } from "@/components/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -76,19 +83,31 @@ export function TableDemo() {
 	return (
 		<>
 			<Table>
+				<TableHeader>
+					<TableRow>
+						<TableHead>Source</TableHead>
+						<TableHead className="text-right">Initial</TableHead>
+						<TableHead className="text-right">Current</TableHead>
+					</TableRow>
+				</TableHeader>
 				<TableBody>
 					{sources.map((source) => {
 						return (
 							<TableRow key={source.id}>
-								<TableCell className="font-semibold flex items-center gap-x-1.5">
-									<FileText size={16} className="text-success" />
-									{source.name}
+								<TableCell className="font-semibold">
+									<span className="flex items-center gap-x-1.5">
+										<FileText size={16} className="text-success shrink-0" />
+										<span className="truncate">{source.name}</span>
+									</span>
+									<span className="block pl-[22px] text-xs font-normal text-muted-foreground">
+										{formatDate(source.createdAt)}
+									</span>
 								</TableCell>
-								<TableCell className="text-muted-foreground text-xs">
-									{formatDate(source.createdAt)}
-								</TableCell>
-								<TableCell className="text-right font-semibold">
+								<TableCell className="text-right text-muted-foreground whitespace-nowrap">
 									{formatCurrency(source.initialBalance, source.currency)}
+								</TableCell>
+								<TableCell className="text-right font-semibold whitespace-nowrap">
+									{formatCurrency(source.balance, source.currency)}
 								</TableCell>
 							</TableRow>
 						);

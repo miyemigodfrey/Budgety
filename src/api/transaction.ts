@@ -20,5 +20,7 @@ export const updateTransaction = (
 export const deleteTransaction = (id: string) =>
 	trpc.transactions.delete.mutate({ id });
 
-export const getTrends = (months = 6) =>
-	trpc.transactions.trends.query({ months, ...spaceArg() });
+export type Granularity = "weekly" | "biweekly" | "monthly" | "yearly";
+
+export const getTrends = (months = 6, granularity: Granularity = "monthly") =>
+	trpc.transactions.trends.query({ months, granularity, ...spaceArg() });

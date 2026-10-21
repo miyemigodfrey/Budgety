@@ -10,12 +10,20 @@ import {
 import { BackButton } from "@/components/BackButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FlowTrendChart } from "@/components/charts/FlowTrendChart";
+import {
+	GranularitySelect,
+	granularityLabel,
+} from "@/components/charts/GranularitySelect";
 import { Button } from "@/components/ui/button";
 import { useCallback, useEffect, useState } from "react";
 import AddSourceModal from "./sourceModal";
 import AddTransactionModal from "../transactions/transactionModal";
 import { getSources, type SourceDto } from "@/api/sources";
-import { getTrends, type TrendPoint } from "@/api/transaction";
+import {
+	getTrends,
+	type Granularity,
+	type TrendPoint,
+} from "@/api/transaction";
 import { Link } from "react-router-dom";
 import { formatCurrency } from "@/lib/formatCurrency";
 import { EmptyState, ErrorState } from "@/components/EmptyState";
@@ -28,6 +36,7 @@ export default function SourcePage() {
 	const [source, setSource] = useState<SourceDto[]>([]);
 	const [trends, setTrends] = useState<TrendPoint[]>([]);
 	const [status, setStatus] = useState<Status>("loading");
+	const [granularity, setGranularity] = useState<Granularity>("monthly");
 
 	const hasSources = source.length > 0;
 
@@ -44,13 +53,9 @@ export default function SourcePage() {
 
 		async function fetchSources() {
 			try {
-				const [sourcesData, trendsData] = await Promise.all([
-					getSources(),
-					getTrends(6),
-				]);
+				const sourcesData = await getSources();
 				if (cancelled) return;
 				setSource(sourcesData);
-				setTrends(trendsData.totalsByMonth);
 				setStatus("ready");
 			} catch (error) {
 				if (cancelled) return;
@@ -64,6 +69,18 @@ export default function SourcePage() {
 			cancelled = true;
 		};
 	}, [reloadKey]);
+
+	// Trends refetch on their own so changing the chart granularity doesn't
+	// reload the source list.
+	useEffect(() => {
+		let cancelled = false;
+		getTrends(6, granularity)
+			.then((data) => !cancelled && setTrends(data.totalsByMonth))
+			.catch((e) => console.error("Failed to load trends:", e));
+		return () => {
+			cancelled = true;
+		};
+	}, [granularity, reloadKey]);
 
 	return (
 		<div className="min-h-screen w-full flex flex-col items-center py-6 px-4">
@@ -160,21 +177,28 @@ export default function SourcePage() {
 				{hasSources && (
 					<div className="mt-2.5 w-full lg:max-w-md min-w-0 bg-card rounded-xl shadow-md p-3 border border-border">
 						<Tabs defaultValue="inflow" className="w-full">
-							<TabsList className="w-full grid grid-cols-3">
-								<TabsTrigger value="inflow">Inflow</TabsTrigger>
-								<TabsTrigger value="outflow">Outflow</TabsTrigger>
-								<TabsTrigger value="transfer">Transfer</TabsTrigger>
-							</TabsList>
+							<div className="flex items-center justify-between gap-2">
+								<TabsList className="grid flex-1 grid-cols-3">
+									<TabsTrigger value="inflow">Inflow</TabsTrigger>
+									<TabsTrigger value="outflow">Outflow</TabsTrigger>
+									<TabsTrigger value="transfer">Transfer</TabsTrigger>
+								</TabsList>
+								<GranularitySelect
+									value={granularity}
+									onChange={setGranularity}
+									className="h-9 w-28 text-xs shrink-0"
+								/>
+							</div>
 
 							<TabsContent value="inflow">
 								<FlowTrendChart
 									series={trends}
 									flow="inflow"
 									title="Inflow"
-									description="Money in, per month (last 6 months)"
+									description={`Money in, per ${granularityLabel(granularity).toLowerCase()}`}
 									icon={TrendingUp}
 									emptyTitle="No inflow yet"
-									emptyDescription="Record income and it'll show up here month by month."
+									emptyDescription="Record income and it'll show up here over time."
 								/>
 							</TabsContent>
 
@@ -183,10 +207,10 @@ export default function SourcePage() {
 									series={trends}
 									flow="outflow"
 									title="Outflow"
-									description="Money out, per month (last 6 months)"
+									description={`Money out, per ${granularityLabel(granularity).toLowerCase()}`}
 									icon={TrendingDown}
 									emptyTitle="No outflow yet"
-									emptyDescription="Record spending and it'll show up here month by month."
+									emptyDescription="Record spending and it'll show up here over time."
 								/>
 							</TabsContent>
 
@@ -195,7 +219,7 @@ export default function SourcePage() {
 									series={trends}
 									flow="transfer"
 									title="Transfer"
-									description="Between your sources, per month (last 6 months)"
+									description={`Between your sources, per ${granularityLabel(granularity).toLowerCase()}`}
 									icon={ArrowLeftRight}
 									emptyTitle="No transfers yet"
 									emptyDescription="Move money between sources and it'll show up here."

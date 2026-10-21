@@ -11,6 +11,12 @@ export const exportRouter = createTRPCRouter({
 	summary: protectedProcedure
 		.input(monthsSchema)
 		.query(({ ctx, input }) =>
-			getSummary(ctx.db, ctx.session.user.id, input?.months ?? 6, input?.spaceId),
+			getSummary(
+				ctx.db,
+				ctx.session.user.id,
+				input?.months ?? 6,
+				input?.spaceId,
+				input?.granularity,
+			),
 		),
 });

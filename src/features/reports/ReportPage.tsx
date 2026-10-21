@@ -6,8 +6,13 @@ import {
 	TotalTransactionBarChart,
 	TransactionBreakdownChart,
 } from "@/components/charts/TransactionChart";
+import {
+	GranularitySelect,
+	granularityLabel,
+} from "@/components/charts/GranularitySelect";
 import { DownloardCards } from "@/components/DownloadCards";
 import { getSummary, type ReportSummary } from "@/api/export";
+import type { Granularity } from "@/api/transaction";
 import { formatCurrency } from "@/lib/formatCurrency";
 import { ErrorState } from "@/components/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,6 +21,7 @@ import type { Status } from "@/lib/status";
 export default function ReportPage() {
 	const [summary, setSummary] = useState<ReportSummary | null>(null);
 	const [status, setStatus] = useState<Status>("loading");
+	const [granularity, setGranularity] = useState<Granularity>("monthly");
 
 	const [reloadKey, setReloadKey] = useState(0);
 
@@ -29,7 +35,7 @@ export default function ReportPage() {
 
 		async function fetchSummary() {
 			try {
-				const data = await getSummary(6);
+				const data = await getSummary(6, granularity);
 				if (cancelled) return;
 				setSummary(data);
 				setStatus("ready");
@@ -44,7 +50,7 @@ export default function ReportPage() {
 		return () => {
 			cancelled = true;
 		};
-	}, [reloadKey]);
+	}, [reloadKey, granularity]);
 
 	return (
 		<div className="min-h-screen w-full flex flex-col items-center py-6 px-4">
@@ -103,11 +109,17 @@ export default function ReportPage() {
 			)}
 
 			<div className="mt-8 w-full bg-card rounded-xl shadow-md p-4">
-				<p className="font-bold text-2xl py-2 ">Monthly Summary</p>
+				<div className="flex flex-wrap items-center justify-between gap-2 py-2">
+					<p className="font-bold text-2xl">
+						{granularityLabel(granularity)} Summary
+					</p>
+					<GranularitySelect value={granularity} onChange={setGranularity} />
+				</div>
 
 				<div className="grid gap-6 md:grid-cols-2 mt-8">
 					<TotalTransactionBarChart
 						series={summary?.charts.totalTransactionsSeries}
+						description={`${granularityLabel(granularity)} totals`}
 					/>
 					<TransactionBreakdownChart
 						series={summary?.charts.breakdownSeries}
