@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 import { LockKeyhole } from "lucide-react";
 import { PinInput } from "@/components/PinInput";
+import { AppLoader } from "@/components/AppLoader";
 import { getMe } from "@/api/account";
 import { verifyPin } from "@/api/account";
 import { getSettings } from "@/api/settings";
@@ -44,17 +45,24 @@ export function PinLockGate({ children }: { children: React.ReactNode }) {
 			return;
 		}
 		let cancelled = false;
+		const startedAt = Date.now();
+		// Keep the launch animation on screen long enough to play through on a
+		// cold start (it resolves instantly on later in-session reloads above).
+		const MIN_SPLASH = 2600;
 		(async () => {
+			let target: Status = "unlocked";
 			try {
 				const [me, settings] = await Promise.all([getMe(), getSettings()]);
-				if (cancelled) return;
-				const shouldLock = settings.appLockEnabled && me.hasPin;
-				setStatus(shouldLock ? "locked" : "unlocked");
+				target = settings.appLockEnabled && me.hasPin ? "locked" : "unlocked";
 			} catch {
 				// If we can't determine lock state, don't trap the user out — the
 				// session + middleware already protect the routes.
-				if (!cancelled) setStatus("unlocked");
+				target = "unlocked";
 			}
+			const wait = Math.max(0, MIN_SPLASH - (Date.now() - startedAt));
+			setTimeout(() => {
+				if (!cancelled) setStatus(target);
+			}, wait);
 		})();
 		return () => {
 			cancelled = true;
@@ -66,17 +74,9 @@ export function PinLockGate({ children }: { children: React.ReactNode }) {
 		setStatus("unlocked");
 	}, []);
 
-	if (status === "loading") return <Splash />;
+	if (status === "loading") return <AppLoader />;
 	if (status === "locked") return <LockScreen onUnlocked={unlock} />;
 	return <>{children}</>;
-}
-
-function Splash() {
-	return (
-		<div className="min-h-screen w-full flex items-center justify-center bg-app-background">
-			<div className="h-8 w-8 animate-spin rounded-full border-2 border-brand border-t-transparent" />
-		</div>
-	);
 }
 
 function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
