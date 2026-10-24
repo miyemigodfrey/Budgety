@@ -4,6 +4,7 @@ import { SessionProvider } from "next-auth/react";
 import { TRPCReactProvider } from "@/trpc/react";
 import { ThemeProvider } from "@/context/ThemeProvider";
 import { SpaceProvider } from "@/context/SpaceProvider";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import ToastProvider from "@/context/ToastProvider";
 
 /**
@@ -22,6 +23,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 					<SpaceProvider>
 						{children}
 						<ToastProvider />
+						<ServiceWorkerRegister />
 					</SpaceProvider>
 				</ThemeProvider>
 			</TRPCReactProvider>

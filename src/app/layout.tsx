@@ -1,12 +1,36 @@
 import "@/styles/globals.css";
 
-import { type Metadata } from "next";
+import { type Metadata, type Viewport } from "next";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-	title: "Budgety",
-	description: "Personal finance management",
-	icons: [{ rel: "icon", url: "/favicon.ico" }],
+	applicationName: "Budgety",
+	title: { default: "Budgety", template: "%s | Budgety" },
+	description: "Track your money across purpose-based spaces.",
+	manifest: "/manifest.webmanifest",
+	icons: {
+		icon: "/favicon.ico",
+		apple: "/apple-touch-icon.png",
+	},
+	appleWebApp: {
+		capable: true,
+		statusBarStyle: "default",
+		title: "Budgety",
+	},
+	other: {
+		"mobile-web-app-capable": "yes",
+	},
+};
+
+export const viewport: Viewport = {
+	width: "device-width",
+	initialScale: 1,
+	maximumScale: 1,
+	viewportFit: "cover",
+	themeColor: [
+		{ media: "(prefers-color-scheme: light)", color: "#eaf1fc" },
+		{ media: "(prefers-color-scheme: dark)", color: "#080d18" },
+	],
 };
 
 // Keep in sync with THEME_STORAGE_KEY in src/context/ThemeContext.ts.
