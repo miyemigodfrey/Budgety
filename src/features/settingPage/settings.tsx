@@ -20,6 +20,7 @@ import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "@/lib/apiError";
 import { getMe, type Me } from "@/api/account";
+import { enablePush, disablePush } from "@/lib/pushClient";
 import {
 	getSettings,
 	updateSettings,
@@ -50,6 +51,20 @@ export default function SettingPage() {
 	const handleToggle = async (key: ToggleKey, value: boolean) => {
 		if (!settings) return;
 
+		// Reminders need a push subscription (and notification permission) before
+		// we persist the flag — if the user declines, leave the toggle off.
+		if (key === "dailyReminder") {
+			if (value) {
+				const res = await enablePush();
+				if (!res.ok) {
+					toast.error(res.reason ?? "Couldn't enable reminders.");
+					return;
+				}
+			} else {
+				await disablePush();
+			}
+		}
+
 		// Optimistic update. Theme application is owned by ThemeProvider, so we
 		// only tell it the new value — we never touch classList here.
 		const previous = settings;
@@ -68,6 +83,7 @@ export default function SettingPage() {
 			if (key === "darkMode") {
 				setTheme(previous.darkMode ? "dark" : "light");
 			}
+			if (key === "dailyReminder" && value) await disablePush();
 			toast.error("Failed to update setting. Please try again.");
 		}
 	};

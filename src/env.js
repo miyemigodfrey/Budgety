@@ -23,19 +23,31 @@ export const env = createEnv({
 		NODE_ENV: z
 			.enum(["development", "test", "production"])
 			.default("development"),
+		// Web Push (daily reminders). Optional: without them the push feature is
+		// simply off and the app still boots.
+		VAPID_PUBLIC_KEY: z.string().min(1).optional(),
+		VAPID_PRIVATE_KEY: z.string().min(1).optional(),
+		// Shared secret the Vercel Cron sends to authorize the reminder send route.
+		CRON_SECRET: z.string().min(1).optional(),
 	},
 
 	/**
-	 * Client-side variables — must be prefixed with NEXT_PUBLIC_. The app is
-	 * same-origin, so there is no API URL here (the old VITE_API_URL is gone).
+	 * Client-side variables — must be prefixed with NEXT_PUBLIC_. The public VAPID
+	 * key is safe to expose; the browser needs it to create a push subscription.
 	 */
-	client: {},
+	client: {
+		NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().min(1).optional(),
+	},
 
 	runtimeEnv: {
 		DATABASE_URL: process.env.DATABASE_URL,
 		DIRECT_URL: process.env.DIRECT_URL,
 		AUTH_SECRET: process.env.AUTH_SECRET,
 		NODE_ENV: process.env.NODE_ENV,
+		VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
+		VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
+		CRON_SECRET: process.env.CRON_SECRET,
+		NEXT_PUBLIC_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
 	},
 
 	skipValidation: !!process.env.SKIP_ENV_VALIDATION,

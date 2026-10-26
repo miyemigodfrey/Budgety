@@ -108,7 +108,7 @@ export default function ProfilePage() {
 	const initial = me?.name?.trim()?.[0]?.toUpperCase() ?? "?";
 
 	return (
-		<div className="min-h-screen w-full flex flex-col items-center py-6 px-4">
+		<div className="w-full flex flex-col items-center py-6 px-4">
 			<header className="w-full max-w-2xl">
 				<div className="flex items-center gap-2">
 					<BackButton />
@@ -118,41 +118,46 @@ export default function ProfilePage() {
 
 			<div className="mt-8 w-full max-w-2xl space-y-4">
 				{/* Identity card */}
-				<div className="bg-card w-full flex items-center gap-4 rounded-xl p-5 shadow-md">
-					<div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand text-2xl font-bold text-brand-foreground">
-						{me ? initial : <Skeleton className="h-16 w-16 rounded-full" />}
+				<div className="bg-card w-full rounded-xl p-5 shadow-md">
+					<div className="flex items-center gap-4">
+						<div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand text-2xl font-bold text-brand-foreground">
+							{me ? initial : <Skeleton className="h-16 w-16 rounded-full" />}
+						</div>
+						<div className="min-w-0 flex-1">
+							{me ? (
+								<>
+									<p className="truncate text-lg font-semibold text-foreground">
+										{me.name}
+									</p>
+									<p className="truncate text-sm text-muted-foreground">
+										{me.email}
+									</p>
+								</>
+							) : (
+								<div className="space-y-2">
+									<Skeleton className="h-5 w-40" />
+									<Skeleton className="h-4 w-52" />
+								</div>
+							)}
+						</div>
+						<Button
+							variant="ghost"
+							size="icon-sm"
+							className="shrink-0"
+							disabled={!me}
+							aria-label="Edit name"
+							onClick={() => {
+								setNameDraft(me?.name ?? "");
+								setNameOpen(true);
+							}}>
+							<Pencil className="size-4" />
+						</Button>
 					</div>
-					<div className="min-w-0 flex-1">
-						{me ? (
-							<>
-								<p className="truncate text-lg font-semibold text-foreground">
-									{me.name}
-								</p>
-								<p className="truncate text-sm text-muted-foreground">
-									{me.email}
-								</p>
-								<p className="mt-1 text-xs text-muted-foreground">
-									Member since {formatDate(me.createdAt)}
-								</p>
-							</>
-						) : (
-							<div className="space-y-2">
-								<Skeleton className="h-5 w-40" />
-								<Skeleton className="h-4 w-52" />
-							</div>
-						)}
-					</div>
-					<Button
-						variant="ghost"
-						size="sm"
-						disabled={!me}
-						onClick={() => {
-							setNameDraft(me?.name ?? "");
-							setNameOpen(true);
-						}}>
-						<Pencil className="size-4" />
-						Edit
-					</Button>
+					{me && (
+						<p className="mt-3 text-xs text-muted-foreground">
+							Member since {formatDate(me.createdAt)}
+						</p>
+					)}
 				</div>
 
 				{/* Security */}

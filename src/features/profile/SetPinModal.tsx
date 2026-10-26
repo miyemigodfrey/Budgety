@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import UniversalModal from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
 import { PinInput } from "@/components/PinInput";
 import { setPin } from "@/api/account";
 import { toast } from "react-toastify";
@@ -65,8 +66,17 @@ export default function SetPinModal({ open, setOpen, onSaved }: Props) {
 			title={first === null ? "Create a PIN" : "Confirm your PIN"}
 			description={
 				first === null
-					? "Choose a 4-digit PIN to unlock the app."
+					? "Choose a 4-digit PIN to unlock the app, or skip it for now."
 					: "Enter the same 4 digits again."
+			}
+			footer={
+				<Button
+					variant="ghost"
+					disabled={saving}
+					onClick={() => setOpen(false)}
+					className="w-full text-muted-foreground">
+					Not now
+				</Button>
 			}>
 			<div className="flex w-full justify-center py-4">
 				<PinInput

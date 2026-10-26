@@ -1,6 +1,7 @@
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 import { authRouter } from "@/server/api/routers/auth";
 import { accountRouter } from "@/server/api/routers/account";
+import { pushRouter } from "@/server/api/routers/push";
 import { sourcesRouter } from "@/server/api/routers/sources";
 import { transactionsRouter } from "@/server/api/routers/transactions";
 import { categoriesRouter } from "@/server/api/routers/categories";
@@ -16,6 +17,7 @@ import { spacesRouter } from "@/server/api/routers/spaces";
 export const appRouter = createTRPCRouter({
 	auth: authRouter,
 	account: accountRouter,
+	push: pushRouter,
 	sources: sourcesRouter,
 	transactions: transactionsRouter,
 	categories: categoriesRouter,

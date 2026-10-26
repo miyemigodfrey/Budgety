@@ -45,12 +45,28 @@ model User {
   pin       String?
   createdAt DateTime @default(now())
 
-  spaces          Space[]
-  sources         Source[]
-  transactions    Transaction[]
-  categories      Category[]
-  reconciliations Reconciliation[]
-  settings        UserSettings?
+  spaces            Space[]
+  sources           Source[]
+  transactions      Transaction[]
+  categories        Category[]
+  reconciliations   Reconciliation[]
+  settings          UserSettings?
+  pushSubscriptions PushSubscription[]
+}
+
+// A browser/device push subscription for daily reminders (Web Push + VAPID).
+// One user can have several (phone PWA, laptop, etc.).
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // A self-contained "board" of sources — e.g. Personal, Business, Savings. The

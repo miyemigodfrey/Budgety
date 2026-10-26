@@ -56,3 +56,33 @@ Requirements: iOS 16.4+ for full PWA behavior. The app is installable on Android
 - `public/sw.js` + `src/components/ServiceWorkerRegister.tsx` -> offline resilience
   (registers in **production only**; never caches `/api`, so auth and data stay live).
 - `public/offline.html` -> shown when a page load has no connection.
+
+## 5. Daily reminder notifications (Web Push)
+
+Reminders use the browser's Web Push (no Firebase). Three extra env vars are
+needed in Vercel; without them the app runs fine and the feature is just off.
+
+1. Generate a VAPID key pair once (locally):
+   ```
+   npx web-push generate-vapid-keys
+   ```
+2. In Vercel -> Settings -> Environment Variables add (Production):
+
+   | Name | Value |
+   | --- | --- |
+   | `VAPID_PUBLIC_KEY` | the public key from step 1 |
+   | `VAPID_PRIVATE_KEY` | the private key from step 1 |
+   | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | the **same** public key |
+   | `CRON_SECRET` | a random secret, e.g. `openssl rand -base64 24` |
+
+   (Your local `.env` already has a working set for dev.)
+3. The daily send is scheduled in `vercel.json` (`/api/cron/daily-reminder` at
+   19:00 UTC = 20:00 WAT). Vercel runs it automatically and authorizes it with
+   `CRON_SECRET`. On the Hobby plan, once-daily crons are supported.
+
+**How users turn it on:** Settings -> Daily Reminder. The app asks for
+notification permission and subscribes the device. On **iPhone**, push only
+works when Budgety is **installed to the home screen** (iOS 16.4+), so add it to
+the home screen first, then enable the toggle.
+
+To change the time, edit the `schedule` in `vercel.json` (cron is in UTC).
