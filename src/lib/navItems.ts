@@ -6,6 +6,7 @@ import {
 	Printer,
 	Scale,
 	Settings,
+	ShoppingCart,
 	type LucideIcon,
 } from "lucide-react";
 
@@ -35,6 +36,7 @@ export const navItems: NavItem[] = [
 	{ id: 4, url: "/transaction", icon: ArrowLeftRight, label: "Transaction" },
 	{ id: 5, url: "/report", icon: FileText, label: "Report" },
 	{ id: 6, url: "/reconcilation", icon: Scale, label: "Reconcile" },
+	{ id: 8, url: "/shopping", icon: ShoppingCart, label: "Shopping" },
 	{
 		id: 7,
 		url: "/setting",

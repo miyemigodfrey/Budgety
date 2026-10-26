@@ -161,3 +161,40 @@ export const monthsSchema = z
 	})
 	.strict()
 	.optional();
+
+// ---- shopping list planner ----
+// Money fields are UNIT prices in major units; they convert to minor at the
+// edge exactly like sources/transactions do. Purchased fields are nullable so
+// un-ticking "bought" can clear them (null bypasses the toMinor transform).
+const quantity = z.number().int().min(1);
+
+export const createListSchema = z
+	.object({ name: z.string().min(1).max(60) })
+	.strict();
+
+export const renameListSchema = z
+	.object({ id: z.string(), name: z.string().min(1).max(60) })
+	.strict();
+
+export const listIdSchema = z.object({ id: z.string() }).strict();
+
+export const addShoppingItemSchema = z
+	.object({
+		listId: z.string(),
+		name: z.string().min(1).max(100),
+		plannedQty: quantity.default(1),
+		plannedUnit: money.transform(toMinor).optional(),
+	})
+	.strict();
+
+export const updateShoppingItemSchema = z
+	.object({
+		id: z.string(),
+		name: z.string().min(1).max(100).optional(),
+		plannedQty: quantity.optional(),
+		plannedUnit: money.transform(toMinor).optional(),
+		bought: z.boolean().optional(),
+		purchasedQty: quantity.nullable().optional(),
+		purchasedUnit: money.transform(toMinor).nullable().optional(),
+	})
+	.strict();
