@@ -1,15 +1,8 @@
+"use client";
+
 import * as React from "react";
-import {
-	Dialog,
-	DialogTrigger,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogDescription,
-	DialogFooter,
-	DialogClose,
-} from "@/components/ui/dialog";
-import { ArrowLeft } from "lucide-react";
+import { Dialog as DialogPrimitive } from "radix-ui";
+import { X } from "lucide-react";
 
 type Props = {
 	open?: boolean;
@@ -19,9 +12,18 @@ type Props = {
 	description?: React.ReactNode;
 	children?: React.ReactNode;
 	footer?: React.ReactNode;
+	/** Extra classes on the dialog panel. */
 	className?: string;
+	/** Panel width on tablet and up (default 480). Phones always get a bottom sheet. */
+	maxWidth?: number;
 };
 
+/**
+ * The app's one dialog: a centred card on tablet and up, a bottom sheet with a
+ * grabber on phones (styles: .scrim / .dialog in budgety.css). Built on Radix
+ * so focus trapping, Escape and scroll locking come for free. The overlay
+ * carries `.app` so the portal gets the design tokens.
+ */
 export default function UniversalModal({
 	open,
 	onOpenChange,
@@ -31,54 +33,40 @@ export default function UniversalModal({
 	children,
 	footer,
 	className,
+	maxWidth,
 }: Props) {
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			{trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-
-			<DialogContent
-				// The default close button is absolutely positioned and collides
-				// with the title, so we render our own inline in the header row.
-				showCloseButton={false}
-				className={`
-					w-full
-					h-full
-					sm:h-fit
-					sm:max-w-lg
-					sm:rounded-3xl
-					sm:mx-auto
-					sm:my-16
-					p-6
-					border
-					border-border
-					flex
-					flex-col
-					bg-surface-sunken
-					${className}
-				`}>
-				<DialogHeader className="space-y-0">
-					<div className="flex items-start gap-3">
-						<DialogClose
-							aria-label="Close"
-							className="mt-0.5 shrink-0 rounded-md text-muted-foreground opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-							<ArrowLeft className="size-5" />
-						</DialogClose>
-
-						<div className="min-w-0 flex-1 text-left">
-							{title && <DialogTitle>{title}</DialogTitle>}
-							{description && (
-								<DialogDescription className="mt-1">
-									{description}
-								</DialogDescription>
-							)}
+		<DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+			{trigger && <DialogPrimitive.Trigger asChild>{trigger}</DialogPrimitive.Trigger>}
+			<DialogPrimitive.Portal>
+				<DialogPrimitive.Overlay className="app app-layer scrim">
+					<DialogPrimitive.Content
+						className={`dialog ${className ?? ""}`}
+						style={maxWidth ? { maxWidth } : undefined}
+						{...(description ? {} : { "aria-describedby": undefined })}>
+						<span className="grabber" aria-hidden="true" />
+						<div className="dialog-h">
+							<div className="stack-sm" style={{ gap: 4 }}>
+								{title && (
+									<DialogPrimitive.Title className="t-h2">{title}</DialogPrimitive.Title>
+								)}
+								{description && (
+									<DialogPrimitive.Description className="t-sm t-muted">
+										{description}
+									</DialogPrimitive.Description>
+								)}
+							</div>
+							<DialogPrimitive.Close
+								className="btn btn-ghost btn-icon btn-sm dialog-x"
+								aria-label="Close">
+								<X className="ic" />
+							</DialogPrimitive.Close>
 						</div>
-					</div>
-				</DialogHeader>
-
-				<div className="flex-1 overflow-auto mt-6">{children}</div>
-
-				{footer && <DialogFooter>{footer}</DialogFooter>}
-			</DialogContent>
-		</Dialog>
+						<div className="dialog-b">{children}</div>
+						{footer && <div className="dialog-f">{footer}</div>}
+					</DialogPrimitive.Content>
+				</DialogPrimitive.Overlay>
+			</DialogPrimitive.Portal>
+		</DialogPrimitive.Root>
 	);
 }

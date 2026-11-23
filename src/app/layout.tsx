@@ -1,7 +1,16 @@
 import "@/styles/globals.css";
 
 import { type Metadata, type Viewport } from "next";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import { Providers } from "./providers";
+
+// App typeface from the redesign (budgety.css reads --font-jakarta).
+const jakarta = Plus_Jakarta_Sans({
+	subsets: ["latin"],
+	weight: ["400", "500", "600", "700", "800"],
+	variable: "--font-jakarta",
+	display: "swap",
+});
 
 export const metadata: Metadata = {
 	applicationName: "Budgety",
@@ -43,7 +52,7 @@ export default function RootLayout({
 	return (
 		// suppressHydrationWarning: the script above mutates <html>'s className
 		// before React hydrates, which would otherwise warn on every load.
-		<html lang="en" suppressHydrationWarning>
+		<html lang="en" className={jakarta.variable} suppressHydrationWarning>
 			<head>
 				<script dangerouslySetInnerHTML={{ __html: themeScript }} />
 			</head>

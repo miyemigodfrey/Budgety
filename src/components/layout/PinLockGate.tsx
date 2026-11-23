@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
-import { LockKeyhole } from "lucide-react";
+import { Banknote, EyeOff, Landmark, Lock, LogOut, ShieldCheck, Smartphone } from "lucide-react";
 import { PinInput } from "@/components/PinInput";
 import { AppLoader } from "@/components/AppLoader";
-import { getMe } from "@/api/account";
+import { getMe, type Me } from "@/api/account";
 import { verifyPin } from "@/api/account";
 import { getSettings } from "@/api/settings";
+import { AuthLogo, AuthRings, AuthThemeToggle, brandTile } from "@/features/login/AuthChrome";
 
 const UNLOCK_KEY = "budgety:unlocked";
 const MAX_ATTEMPTS = 5;
@@ -37,6 +38,7 @@ type Status = "loading" | "locked" | "unlocked";
  */
 export function PinLockGate({ children }: { children: React.ReactNode }) {
 	const [status, setStatus] = useState<Status>("loading");
+	const [me, setMe] = useState<Me | null>(null);
 
 	useEffect(() => {
 		// Unlocked earlier this session (survives in-app navigation and reloads).
@@ -52,8 +54,9 @@ export function PinLockGate({ children }: { children: React.ReactNode }) {
 		(async () => {
 			let target: Status = "unlocked";
 			try {
-				const [me, settings] = await Promise.all([getMe(), getSettings()]);
-				target = settings.appLockEnabled && me.hasPin ? "locked" : "unlocked";
+				const [account, settings] = await Promise.all([getMe(), getSettings()]);
+				target = settings.appLockEnabled && account.hasPin ? "locked" : "unlocked";
+				if (!cancelled) setMe(account);
 			} catch {
 				// If we can't determine lock state, don't trap the user out — the
 				// session + middleware already protect the routes.
@@ -75,11 +78,11 @@ export function PinLockGate({ children }: { children: React.ReactNode }) {
 	}, []);
 
 	if (status === "loading") return <AppLoader />;
-	if (status === "locked") return <LockScreen onUnlocked={unlock} />;
+	if (status === "locked") return <LockScreen me={me} onUnlocked={unlock} />;
 	return <>{children}</>;
 }
 
-function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
+function LockScreen({ me, onUnlocked }: { me: Me | null; onUnlocked: () => void }) {
 	const [error, setError] = useState<string | null>(null);
 	const [resetSignal, setResetSignal] = useState(0);
 	const [attempts, setAttempts] = useState(0);
@@ -109,31 +112,135 @@ function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
 		}
 	};
 
+	const displayName = me?.name?.trim() || me?.email || "";
+	const initial = (displayName.charAt(0) || "B").toUpperCase();
+
 	return (
-		<div className="min-h-screen w-full flex flex-col items-center justify-center gap-8 bg-app-background px-6">
-			<div className="flex flex-col items-center gap-3 text-center">
-				<div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand/10">
-					<LockKeyhole className="size-6 text-brand" />
-				</div>
-				<h1 className="text-xl font-bold text-foreground">Enter your PIN</h1>
-				<p className="text-sm text-muted-foreground">
-					Budgety is locked. Enter your 4-digit PIN to continue.
-				</p>
+		<div className="app">
+			<div className="auth">
+				{/* ============ Brand panel ============ */}
+				<section className="auth-brand" aria-label="App lock">
+					<AuthRings />
+
+					<div className="between" style={{ position: "relative" }}>
+						<AuthLogo />
+						<div className="row-f" style={{ gap: 8 }}>
+							<span className="hero-pill">
+								<Lock className="ic ic-xs" aria-hidden="true" />
+								Locked
+							</span>
+							<AuthThemeToggle />
+						</div>
+					</div>
+
+					<div className="stack hide-m" style={{ position: "relative", gap: 16, maxWidth: 520 }}>
+						<span className="t-over" style={{ color: "oklch(1 0 0 / 0.75)" }}>
+							App Lock is on
+						</span>
+						<h1 className="t-display" style={{ fontVariantNumeric: "normal" }}>
+							Your budget is locked.
+						</h1>
+						<p style={{ fontSize: 16, color: "oklch(1 0 0 / 0.82)", maxWidth: 460 }}>
+							Balances stay hidden until you enter your 4-digit PIN.
+							{me?.email ? ` You’re still signed in as ${me.email}.` : ""}
+						</p>
+					</div>
+
+					{/* Masked balance card — decorative, shows no account data. */}
+					<div
+						className="hide-t"
+						aria-hidden="true"
+						style={{
+							position: "relative",
+							maxWidth: 440,
+							background: "oklch(1 0 0 / 0.1)",
+							border: "1px solid oklch(1 0 0 / 0.2)",
+							borderRadius: 20,
+							padding: 20,
+							display: "flex",
+							flexDirection: "column",
+							gap: 14,
+						}}>
+						<div className="between">
+							<span style={{ fontSize: 12, fontWeight: 600, color: "oklch(1 0 0 / 0.78)" }}>
+								Total balance
+							</span>
+							<EyeOff className="ic ic-sm" style={{ opacity: 0.8 }} />
+						</div>
+						<span style={{ fontSize: 32, fontWeight: 750, letterSpacing: "0.08em", lineHeight: 1.1 }}>
+							₦ • • • • • •
+						</span>
+						<div style={{ height: 1, background: "oklch(1 0 0 / 0.16)" }} />
+						{[
+							{ Icon: Landmark, label: "Bank", w: 96 },
+							{ Icon: Smartphone, label: "Wallet", w: 72 },
+							{ Icon: Banknote, label: "Cash", w: 56 },
+						].map(({ Icon, label, w }) => (
+							<div key={label} className="between t-sm">
+								<span className="row-f">
+									<span style={brandTile(28, 8)}>
+										<Icon className="ic ic-sm" />
+									</span>
+									{label}
+								</span>
+								<span style={{ width: w, height: 10, borderRadius: 999, background: "oklch(1 0 0 / 0.22)" }} />
+							</div>
+						))}
+					</div>
+
+					<p className="row-f hide-t" style={{ position: "relative", fontSize: 13, color: "oklch(1 0 0 / 0.75)" }}>
+						<ShieldCheck className="ic ic-sm" aria-hidden="true" />
+						Change or remove your PIN in Profile → Security.
+					</p>
+				</section>
+
+				{/* ============ PIN pad ============ */}
+				<section className="auth-form" aria-label="Enter your PIN">
+					<div className="auth-card" style={{ alignItems: "center", textAlign: "center", gap: 20, maxWidth: 340 }}>
+						{me && (
+							<div className="stack-sm" style={{ alignItems: "center", gap: 10 }}>
+								<span className="avatar avatar-lg" aria-hidden="true">
+									{initial}
+								</span>
+								<div className="stack-sm" style={{ alignItems: "center", gap: 2 }}>
+									{me.name && <strong style={{ fontSize: 16 }}>{me.name}</strong>}
+									<span className="t-sm t-muted">{me.email}</span>
+								</div>
+							</div>
+						)}
+
+						<PinInput
+							title="Enter your PIN"
+							hint="4-digit PIN you set in Profile"
+							busyText="Unlocking…"
+							onComplete={handleComplete}
+							error={error}
+							resetSignal={resetSignal}
+							disabled={checking}
+						/>
+
+						<div className="row-f" style={{ gap: 4, justifyContent: "center", flexWrap: "wrap" }}>
+							<button
+								type="button"
+								className="btn btn-ghost btn-sm"
+								onClick={() => signOut({ callbackUrl: "/login" })}>
+								Forgot PIN? Use password
+							</button>
+							<span className="t-muted" aria-hidden="true">
+								·
+							</span>
+							<button
+								type="button"
+								className="btn btn-ghost btn-sm"
+								style={{ color: "var(--danger)" }}
+								onClick={() => signOut({ callbackUrl: "/login" })}>
+								<LogOut className="ic ic-sm" aria-hidden="true" />
+								Log out
+							</button>
+						</div>
+					</div>
+				</section>
 			</div>
-
-			<PinInput
-				onComplete={handleComplete}
-				error={error}
-				resetSignal={resetSignal}
-				disabled={checking}
-			/>
-
-			<button
-				type="button"
-				onClick={() => signOut({ callbackUrl: "/login" })}
-				className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
-				Forgot PIN? Use password
-			</button>
 		</div>
 	);
 }

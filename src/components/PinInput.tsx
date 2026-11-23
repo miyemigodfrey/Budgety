@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Delete } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 const LENGTH = 4;
+const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"] as const;
 
 type Props = {
 	/** Fired when all 4 digits are entered. */
@@ -14,13 +14,20 @@ type Props = {
 	/** Bump this number to clear the entry (e.g. after a failed attempt). */
 	resetSignal?: number;
 	disabled?: boolean;
+	/** Optional heading above the dots (e.g. "Enter your PIN"). */
+	title?: string;
+	/** Muted helper line under the dots when there's no error. */
+	hint?: string;
+	/** Shown in brand colour under the dots while `disabled` after a full entry. */
+	busyText?: string;
 };
 
 /**
  * A 4-digit PIN entry: masked dots + an on-screen numeric keypad, with physical
  * keyboard support. Reused by the lock screen and the set/confirm PIN flow.
+ * Canvas classes: .pin-dots, .keypad, .key (budgety.css).
  */
-export function PinInput({ onComplete, error, resetSignal, disabled }: Props) {
+export function PinInput({ onComplete, error, resetSignal, disabled, title, hint, busyText }: Props) {
 	const [pin, setPin] = useState("");
 	const firedRef = useRef(false);
 
@@ -56,8 +63,16 @@ export function PinInput({ onComplete, error, resetSignal, disabled }: Props) {
 	// Physical keyboard (desktop convenience).
 	useEffect(() => {
 		const handler = (e: KeyboardEvent) => {
-			if (e.key >= "0" && e.key <= "9") press(e.key);
-			else if (e.key === "Backspace") back();
+			if (e.metaKey || e.ctrlKey || e.altKey) return;
+			const target = e.target as HTMLElement | null;
+			if (target?.closest("input, textarea, select, [contenteditable='true']")) return;
+			if (e.key >= "0" && e.key <= "9" && e.key.length === 1) {
+				e.preventDefault();
+				press(e.key);
+			} else if (e.key === "Backspace") {
+				e.preventDefault();
+				back();
+			}
 		};
 		window.addEventListener("keydown", handler);
 		return () => window.removeEventListener("keydown", handler);
@@ -65,58 +80,63 @@ export function PinInput({ onComplete, error, resetSignal, disabled }: Props) {
 
 	// Show the error until the user starts a fresh entry.
 	const showError = !!error && pin.length === 0;
+	const busy = !!disabled && pin.length === LENGTH && !!busyText;
+	const status = showError ? error : busy ? busyText : hint;
+	const statusColor = showError ? "var(--danger)" : busy ? "var(--brand)" : "var(--muted-ink)";
 
 	return (
-		<div className="flex flex-col items-center gap-6">
-			{/* Dots */}
-			<div className="flex items-center gap-4">
-				{Array.from({ length: LENGTH }).map((_, i) => (
-					<span
-						key={i}
-						className={cn(
-							"h-4 w-4 rounded-full border-2 transition-colors",
-							showError
-								? "border-danger"
-								: i < pin.length
-									? "border-brand bg-brand"
-									: "border-muted-foreground/40",
-						)}
-					/>
-				))}
+		<div className="stack-sm" style={{ alignItems: "center", gap: 20 }}>
+			<div className="stack-sm" style={{ alignItems: "center", gap: 14 }}>
+				{title && <h2 className="t-h2">{title}</h2>}
+				<div className="pin-dots" role="img" aria-label={`${pin.length} of ${LENGTH} digits entered`}>
+					{Array.from({ length: LENGTH }).map((_, i) => (
+						<span
+							key={i}
+							className={!showError && i < pin.length ? "on" : undefined}
+							style={showError ? { borderColor: "var(--danger)" } : undefined}
+						/>
+					))}
+				</div>
+				{(status || hint !== undefined) && (
+					<p
+						className="t-sm"
+						role={showError ? "alert" : undefined}
+						aria-live={showError ? undefined : "polite"}
+						style={{ minHeight: 20, color: statusColor, fontWeight: 600 }}>
+						{status}
+					</p>
+				)}
 			</div>
 
-			{showError && (
-				<p className="text-sm font-medium text-danger">{error}</p>
-			)}
-
-			{/* Keypad */}
-			<div className="grid grid-cols-3 gap-3">
-				{["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
-					<button
-						key={d}
-						type="button"
-						disabled={disabled}
-						onClick={() => press(d)}
-						className="flex h-14 w-14 items-center justify-center rounded-full border border-border text-xl font-semibold text-foreground transition hover:bg-muted active:scale-95 disabled:opacity-40">
-						{d}
-					</button>
-				))}
-				<span />
-				<button
-					type="button"
-					disabled={disabled}
-					onClick={() => press("0")}
-					className="flex h-14 w-14 items-center justify-center rounded-full border border-border text-xl font-semibold text-foreground transition hover:bg-muted active:scale-95 disabled:opacity-40">
-					0
-				</button>
-				<button
-					type="button"
-					disabled={disabled}
-					onClick={back}
-					aria-label="Delete"
-					className="flex h-14 w-14 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted active:scale-95 disabled:opacity-40">
-					<Delete className="size-5" />
-				</button>
+			<div className="keypad">
+				{KEYS.map((k, i) => {
+					if (k === "") return <span key={`blank-${i}`} aria-hidden="true" />;
+					if (k === "del")
+						return (
+							<button
+								key="del"
+								className="key ghost"
+								type="button"
+								disabled={disabled}
+								onClick={back}
+								aria-label="Delete last digit"
+								style={disabled ? { opacity: 0.45, cursor: "not-allowed" } : undefined}>
+								<Delete className="ic ic-lg" />
+							</button>
+						);
+					return (
+						<button
+							key={k}
+							className="key"
+							type="button"
+							disabled={disabled}
+							onClick={() => press(k)}
+							aria-label={k}
+							style={disabled ? { opacity: 0.45, cursor: "not-allowed" } : undefined}>
+							{k}
+						</button>
+					);
+				})}
 			</div>
 		</div>
 	);

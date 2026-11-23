@@ -2,12 +2,19 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
-import { KeyRound, LogOut, Pencil, ShieldCheck, Trash2 } from "lucide-react";
-import { BackButton } from "@/components/BackButton";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Link } from "react-router-dom";
+import {
+	ArrowLeft,
+	CalendarDays,
+	KeyRound,
+	Lock,
+	LogOut,
+	Mail,
+	Pencil,
+	ShieldCheck,
+	Trash2,
+	User,
+} from "lucide-react";
 import UniversalModal from "@/components/ui/modal";
 import SetPinModal from "./SetPinModal";
 import { getMe, updateName, removePin, type Me } from "@/api/account";
@@ -23,10 +30,11 @@ import { getErrorMessage } from "@/lib/apiError";
 export default function ProfilePage() {
 	const [me, setMe] = useState<Me | null>(null);
 	const [settings, setSettings] = useState<UserSettings | null>(null);
-	const [nameOpen, setNameOpen] = useState(false);
 	const [nameDraft, setNameDraft] = useState("");
 	const [savingName, setSavingName] = useState(false);
 	const [pinOpen, setPinOpen] = useState(false);
+	const [removeOpen, setRemoveOpen] = useState(false);
+	const [removing, setRemoving] = useState(false);
 	// True when the Set-PIN flow was triggered by turning App Lock on.
 	const [enableLockAfterPin, setEnableLockAfterPin] = useState(false);
 
@@ -34,15 +42,19 @@ export default function ProfilePage() {
 		const [meData, settingsData] = await Promise.all([getMe(), getSettings()]);
 		setMe(meData);
 		setSettings(settingsData);
+		return meData;
 	}, []);
 
 	useEffect(() => {
-		load().catch((e) =>
-			toast.error(getErrorMessage(e, "Couldn't load your profile.")),
-		);
+		load()
+			.then((meData) => setNameDraft(meData.name ?? ""))
+			.catch((e) => toast.error(getErrorMessage(e, "Couldn't load your profile.")));
 	}, [load]);
 
 	const logout = () => signOut({ callbackUrl: "/login" });
+
+	const savedName = me?.name ?? "";
+	const nameUnchanged = nameDraft.trim() === savedName.trim();
 
 	const handleSaveName = async () => {
 		const name = nameDraft.trim();
@@ -54,7 +66,7 @@ export default function ProfilePage() {
 		try {
 			await updateName(name);
 			setMe((prev) => (prev ? { ...prev, name } : prev));
-			setNameOpen(false);
+			setNameDraft(name);
 			toast.success("Name updated");
 		} catch (e) {
 			toast.error(getErrorMessage(e, "Couldn't update your name."));
@@ -95,169 +107,259 @@ export default function ProfilePage() {
 	};
 
 	const handleRemovePin = async () => {
-		if (!window.confirm("Remove your PIN and turn App Lock off?")) return;
+		setRemoving(true);
 		try {
 			await removePin();
 			toast.success("PIN removed");
+			setRemoveOpen(false);
 			await load();
 		} catch (e) {
 			toast.error(getErrorMessage(e, "Couldn't remove the PIN."));
+		} finally {
+			setRemoving(false);
 		}
 	};
 
 	const initial = me?.name?.trim()?.[0]?.toUpperCase() ?? "?";
+	const lockOn = !!settings?.appLockEnabled;
+	const pinStatus = !me
+		? null
+		: me.hasPin
+			? `A PIN is set · App Lock is ${lockOn ? "on" : "off"}`
+			: "No PIN yet · set one to use App Lock";
 
 	return (
-		<div className="w-full flex flex-col items-center py-6 px-4">
-			<header className="w-full max-w-2xl">
-				<div className="flex items-center gap-2">
-					<BackButton />
-					<h1 className="font-bold text-2xl">Profile</h1>
-				</div>
-			</header>
-
-			<div className="mt-8 w-full max-w-2xl space-y-4">
-				{/* Identity card */}
-				<div className="bg-card w-full rounded-xl p-5 shadow-md">
-					<div className="flex items-center gap-4">
-						<div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand text-2xl font-bold text-brand-foreground">
-							{me ? initial : <Skeleton className="h-16 w-16 rounded-full" />}
-						</div>
-						<div className="min-w-0 flex-1">
-							{me ? (
-								<>
-									<p className="truncate text-lg font-semibold text-foreground">
-										{me.name}
-									</p>
-									<p className="truncate text-sm text-muted-foreground">
-										{me.email}
-									</p>
-								</>
-							) : (
-								<div className="space-y-2">
-									<Skeleton className="h-5 w-40" />
-									<Skeleton className="h-4 w-52" />
-								</div>
-							)}
-						</div>
-						<Button
-							variant="ghost"
-							size="icon-sm"
-							className="shrink-0"
-							disabled={!me}
-							aria-label="Edit name"
-							onClick={() => {
-								setNameDraft(me?.name ?? "");
-								setNameOpen(true);
-							}}>
-							<Pencil className="size-4" />
-						</Button>
-					</div>
-					{me && (
-						<p className="mt-3 text-xs text-muted-foreground">
-							Member since {formatDate(me.createdAt)}
-						</p>
-					)}
-				</div>
-
-				{/* Security */}
-				<div className="bg-card w-full rounded-xl p-5 shadow-md space-y-4">
-					<div className="flex items-center gap-2">
-						<ShieldCheck className="size-5 text-brand" />
-						<h2 className="font-semibold text-foreground">Security</h2>
-					</div>
-
-					<div className="flex items-center justify-between gap-3">
-						<div>
-							<p className="text-sm font-medium text-foreground">
-								App Lock (PIN)
-							</p>
-							<p className="text-xs text-muted-foreground">
-								Unlock with a 4-digit PIN instead of your password each time.
-							</p>
-						</div>
-						{settings && me ? (
-							<Switch
-								checked={settings.appLockEnabled}
-								onCheckedChange={handleToggleLock}
-							/>
-						) : (
-							<Skeleton className="h-5 w-9 rounded-full" />
-						)}
-					</div>
-
-					<div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
-						<Button
-							variant="outline"
-							size="sm"
-							disabled={!me}
-							onClick={() => {
-								setEnableLockAfterPin(false);
-								setPinOpen(true);
-							}}>
-							<KeyRound className="size-4" />
-							{me?.hasPin ? "Change PIN" : "Set PIN"}
-						</Button>
-						{me?.hasPin && (
-							<Button
-								variant="ghost"
-								size="sm"
-								onClick={handleRemovePin}
-								className="text-danger hover:text-danger">
-								<Trash2 className="size-4" />
-								Remove PIN
-							</Button>
-						)}
-					</div>
-				</div>
-
-				{/* Log out */}
-				<div className="bg-card w-full flex items-center justify-between rounded-xl p-5 shadow-md">
-					<p className="text-sm font-semibold text-foreground">Log Out</p>
-					<Button
-						type="button"
-						onClick={logout}
-						variant="outline"
-						className="text-danger hover:text-danger">
-						<LogOut className="size-4" />
-						Log out
-					</Button>
+		<main className="page page-narrow">
+			<div className="page-h">
+				<div className="page-h-text">
+					<Link to="/setting" className="back">
+						<ArrowLeft className="ic ic-sm" />
+						Settings
+					</Link>
+					<h1 className="t-h1">Profile</h1>
+					<p className="t-muted">Your details and how you unlock Budgety.</p>
 				</div>
 			</div>
 
-			{/* Edit name */}
-			<UniversalModal
-				open={nameOpen}
-				onOpenChange={setNameOpen}
-				title="Edit name"
-				footer={
-					<div className="flex w-full flex-col gap-3">
-						<Button
-							className="bg-brand"
-							disabled={savingName}
-							onClick={handleSaveName}>
-							{savingName ? "Saving…" : "Save"}
-						</Button>
-						<Button variant="ghost" onClick={() => setNameOpen(false)}>
-							Cancel
-						</Button>
-					</div>
-				}>
-				<div className="w-full space-y-2">
-					<label htmlFor="name" className="text-sm font-medium">
-						Name
-					</label>
-					<Input
-						id="name"
-						value={nameDraft}
-						onChange={(e) => setNameDraft(e.target.value)}
-						onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
-						autoFocus
-					/>
+			{/* Identity */}
+			<section className="card row-f" style={{ gap: 18 }} aria-label="Account">
+				{me ? (
+					<span className="avatar avatar-xl" aria-hidden="true">
+						{initial}
+					</span>
+				) : (
+					<span className="sk" style={{ width: 88, height: 88, borderRadius: 999, flex: "none" }} />
+				)}
+				<div className="grow stack-sm" style={{ gap: 4 }}>
+					{me ? (
+						<>
+							<h2 className="t-h2 trunc">{me.name}</h2>
+							<span className="row-f t-sm t-muted" style={{ gap: 6 }}>
+								<Mail className="ic ic-sm" />
+								<span className="trunc">{me.email}</span>
+							</span>
+							<span className="row-f t-sm t-muted" style={{ gap: 6 }}>
+								<CalendarDays className="ic ic-sm" />
+								Member since {formatDate(me.createdAt)}
+							</span>
+						</>
+					) : (
+						<>
+							<span className="sk" style={{ height: 24, width: 180 }} />
+							<span className="sk" style={{ height: 14, width: 220 }} />
+							<span className="sk" style={{ height: 14, width: 160 }} />
+						</>
+					)}
 				</div>
+			</section>
+
+			{/* Personal details (edit name) */}
+			<section className="card card-flush" aria-label="Personal details">
+				<div className="card-h">
+					<div>
+						<p className="card-t">Personal details</p>
+						<p className="card-s">This is the name Budgety greets you with.</p>
+					</div>
+				</div>
+				<div className="stack" style={{ padding: "8px 20px 20px", gap: 16 }}>
+					<div className="field">
+						<label className="label" htmlFor="pf-name">
+							Name
+						</label>
+						<div className="control">
+							<User className="ic" />
+							<input
+								id="pf-name"
+								className="input has-ic"
+								value={nameDraft}
+								disabled={!me}
+								onChange={(e) => setNameDraft(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === "Enter" && !nameUnchanged && !savingName)
+										void handleSaveName();
+								}}
+								autoComplete="name"
+								aria-describedby="pf-name-hint"
+							/>
+						</div>
+						<span className="hint" id="pf-name-hint">
+							At least 2 characters.
+						</span>
+					</div>
+					<div className="field">
+						<label className="label" htmlFor="pf-email">
+							Email
+						</label>
+						<div className="control">
+							<Mail className="ic" />
+							<input
+								id="pf-email"
+								className="input has-ic"
+								value={me?.email ?? ""}
+								readOnly
+								aria-describedby="pf-email-hint"
+								style={{ background: "var(--surface-2)", color: "var(--muted-ink)" }}
+							/>
+						</div>
+						<span className="hint" id="pf-email-hint">
+							Your sign-in email can&rsquo;t be changed here.
+						</span>
+					</div>
+				</div>
+				<div className="card-foot" style={{ justifyContent: "flex-end" }}>
+					<button
+						className="btn btn-ghost"
+						type="button"
+						disabled={nameUnchanged || savingName}
+						onClick={() => setNameDraft(savedName)}>
+						Cancel
+					</button>
+					<button
+						className="btn btn-primary"
+						type="button"
+						disabled={!me || nameUnchanged || savingName}
+						onClick={handleSaveName}>
+						{savingName ? "Saving…" : "Save name"}
+					</button>
+				</div>
+			</section>
+
+			{/* Security */}
+			<section className="card card-flush" aria-label="Security">
+				<div className="card-h">
+					<div>
+						<p className="card-t">Security</p>
+						<p className="card-s">A convenience lock on top of your signed-in session.</p>
+					</div>
+				</div>
+				<div className="list">
+					<div className="li">
+						<span className="ic-tile">
+							<Lock className="ic" />
+						</span>
+						<span className="li-main">
+							<span className="li-t" id="pf-lock-label">
+								App Lock (PIN)
+							</span>
+							<span className="li-s">
+								Unlock with a 4-digit PIN instead of your password each time.
+							</span>
+						</span>
+						{settings && me ? (
+							<button
+								type="button"
+								role="switch"
+								aria-checked={lockOn}
+								aria-labelledby="pf-lock-label"
+								className={"switch" + (lockOn ? " on" : "")}
+								onClick={() => void handleToggleLock(!lockOn)}
+							/>
+						) : (
+							<span className="sk" style={{ width: 44, height: 26, borderRadius: 999 }} />
+						)}
+					</div>
+					<div className="li" style={{ flexWrap: "wrap" }}>
+						<span className="ic-tile neutral">
+							<ShieldCheck className="ic" />
+						</span>
+						<span className="li-main">
+							<span className="li-t">PIN</span>
+							<span className="li-s">
+								{pinStatus ?? <span className="sk" style={{ height: 12, width: 160 }} />}
+							</span>
+						</span>
+						<div className="row-f" style={{ gap: 8 }}>
+							<button
+								className="btn btn-secondary btn-sm"
+								type="button"
+								disabled={!me}
+								onClick={() => {
+									setEnableLockAfterPin(false);
+									setPinOpen(true);
+								}}>
+								{me?.hasPin ? (
+									<Pencil className="ic ic-sm" />
+								) : (
+									<KeyRound className="ic ic-sm" />
+								)}
+								{me?.hasPin ? "Change PIN" : "Set PIN"}
+							</button>
+							{me?.hasPin && (
+								<button
+									className="btn btn-danger btn-sm"
+									type="button"
+									onClick={() => setRemoveOpen(true)}>
+									Remove PIN
+								</button>
+							)}
+						</div>
+					</div>
+				</div>
+			</section>
+
+			{/* Log out */}
+			<section className="card between wrap" aria-label="Log out">
+				<div className="stack-sm" style={{ gap: 2 }}>
+					<p className="card-t">Log out</p>
+					<p className="t-sm t-muted">Sign out of Budgety on this device.</p>
+				</div>
+				<button className="btn btn-danger" type="button" onClick={logout}>
+					<LogOut className="ic ic-sm" />
+					Log out
+				</button>
+			</section>
+
+			{/* Remove PIN */}
+			<UniversalModal
+				open={removeOpen}
+				onOpenChange={setRemoveOpen}
+				title="Remove your PIN?"
+				footer={
+					<>
+						<span className="grow hide-m" />
+						<button
+							className="btn btn-ghost"
+							type="button"
+							disabled={removing}
+							onClick={() => setRemoveOpen(false)}>
+							Cancel
+						</button>
+						<button
+							className="btn btn-danger"
+							type="button"
+							disabled={removing}
+							onClick={handleRemovePin}>
+							<Trash2 className="ic ic-sm" />
+							{removing ? "Removing…" : "Remove PIN"}
+						</button>
+					</>
+				}>
+				<p className="t-sm t-muted">
+					App Lock will be turned off too. You can set a new PIN any time.
+				</p>
 			</UniversalModal>
 
 			<SetPinModal open={pinOpen} setOpen={setPinOpen} onSaved={handlePinSaved} />
-		</div>
+		</main>
 	);
 }

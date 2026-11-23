@@ -1,39 +1,105 @@
 "use client";
 
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { isNavItemActive, navItems } from "@/lib/navItems";
+import { signOut } from "next-auth/react";
+import { LayoutGrid, LogOut, Plus } from "lucide-react";
+import UniversalModal from "@/components/ui/modal";
+import { NAV, isNavItemActive, moreItems } from "@/lib/navItems";
+import { useSpace } from "@/hooks/useSpace";
+import { useQuickAdd } from "@/components/app/QuickAdd";
+import { initialOf } from "./Sidebar";
 
+/** Phone bottom tabs: Home, Activity, the + button, Sources and a More sheet. */
 export default function Navbar() {
-	const location = useLocation();
+	const { pathname } = useLocation();
+	const { openAddTransaction } = useQuickAdd();
+	const { isAllView, activeSpace, spaces } = useSpace();
+	const [moreOpen, setMoreOpen] = useState(false);
+
+	const tab = (item: typeof NAV.home, label = item.label) => {
+		const Icon = item.icon;
+		const on = isNavItemActive(pathname, item);
+		return (
+			<Link to={item.url} className={`tab${on ? " on" : ""}`} aria-current={on ? "page" : undefined}>
+				<Icon className="ic" />
+				{label}
+			</Link>
+		);
+	};
+	const moreOn = moreItems.some((i) => isNavItemActive(pathname, i));
+	const space = isAllView ? "All spaces" : (activeSpace?.name ?? "…");
 
 	return (
-		<nav className="fixed bottom-0 left-0 right-0 md:hidden bg-card border-t border-border shadow-md pb-3 pt-1.5">
-			{/* The items don't fit a phone width, so the bar scrolls sideways
-			    instead of clipping the last item out of reach. */}
-			<ul className="flex items-center gap-1 overflow-x-auto scroll-smooth px-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-				{navItems.map((item) => {
-					const Icon = item.icon;
-					const isActive = isNavItemActive(location.pathname, item);
+		<>
+			<nav className="tabbar" aria-label="Main navigation">
+				{tab(NAV.home)}
+				{tab(NAV.transactions, "Activity")}
+				<div className="fab-slot">
+					<button
+						type="button"
+						className="fab"
+						aria-label="Add transaction"
+						disabled={isAllView}
+						title={isAllView ? "Open a space to add transactions" : undefined}
+						onClick={openAddTransaction}>
+						<Plus className="ic" />
+					</button>
+				</div>
+				{tab(NAV.sources)}
+				<button
+					type="button"
+					className={`tab${moreOn || moreOpen ? " on" : ""}`}
+					style={{ border: 0, background: "transparent" }}
+					onClick={() => setMoreOpen(true)}>
+					<LayoutGrid className="ic" />
+					More
+				</button>
+			</nav>
 
-					return (
-						<li key={item.id} className="shrink-0">
+			<UniversalModal open={moreOpen} onOpenChange={setMoreOpen} title="More">
+				<Link to="/spaces" className="space-sw" style={{ padding: 12 }} onClick={() => setMoreOpen(false)}>
+					<span className="space-dot" style={{ width: 36, height: 36, fontSize: 14 }}>
+						{isAllView ? "A" : initialOf(space)}
+					</span>
+					<span className="space-meta">
+						<small>
+							Current space · {spaces.length} {spaces.length === 1 ? "space" : "spaces"}
+						</small>
+						<strong className="trunc">{space}</strong>
+					</span>
+					<span className="row-f" style={{ gap: 4, fontSize: 13, fontWeight: 650, color: "var(--brand)" }}>
+						Switch
+					</span>
+				</Link>
+				<nav aria-label="More pages" className="more-grid">
+					{moreItems.map((item) => {
+						const Icon = item.icon;
+						const on = isNavItemActive(pathname, item);
+						return (
 							<Link
+								key={item.id}
 								to={item.url}
-								aria-current={isActive ? "page" : undefined}
-								className={cn(
-									"flex min-w-16 flex-col items-center gap-1 rounded-lg px-3 py-1.5 transition-colors",
-									isActive
-										? "text-brand"
-										: "text-muted-foreground hover:text-foreground",
-								)}>
-								<Icon className="size-5" />
-								<span className="text-xs whitespace-nowrap">{item.label}</span>
+								className={`more-i${on ? " on" : ""}`}
+								aria-current={on ? "page" : undefined}
+								onClick={() => setMoreOpen(false)}>
+								<span className="ic-tile">
+									<Icon className="ic" />
+								</span>
+								{item.label}
 							</Link>
-						</li>
-					);
-				})}
-			</ul>
-		</nav>
+						);
+					})}
+				</nav>
+				<button
+					type="button"
+					className="btn btn-danger btn-block"
+					style={{ height: 46 }}
+					onClick={() => signOut({ callbackUrl: "/login" })}>
+					<LogOut className="ic ic-sm" />
+					Log out
+				</button>
+			</UniversalModal>
+		</>
 	);
 }

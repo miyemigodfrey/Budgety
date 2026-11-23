@@ -1,21 +1,21 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
+import { type CSSProperties, type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+	ArrowDownLeft,
+	ArrowLeftRight,
+	ArrowUpRight,
+	ChevronDown,
+	Info,
+	type LucideIcon,
+} from "lucide-react";
 import UniversalModal from "@/components/ui/modal";
 import { createTransaction } from "@/api/transaction";
 import { getSources } from "@/api/sources";
 import { getCategories, type Category } from "@/api/categories";
 import { useSpace } from "@/hooks/useSpace";
 import { parseMoneyInput, formatMoneyInput } from "@/lib/money";
+import { formatCurrency } from "@/lib/formatCurrency";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "@/lib/apiError";
 
@@ -23,9 +23,11 @@ type Props = {
 	open: boolean;
 	setOpen: (value: boolean) => void;
 	onCreated?: () => void;
+	/** Tab to start on each time the dialog opens. */
+	initialType?: TransactionType;
 };
 
-type Source = { id: string; name: string };
+type Source = { id: string; name: string; balance?: bigint; currency?: string };
 
 type TransactionType = "inflow" | "outflow" | "transfer";
 
@@ -36,12 +38,28 @@ const todayStr = () => {
 	return new Date(d.getTime() - off * 60000).toISOString().split("T")[0]!;
 };
 
+const TABS: { label: string; value: TransactionType; kind: "in" | "out" | "tr"; icon: LucideIcon }[] = [
+	{ label: "Inflow", value: "inflow", kind: "in", icon: ArrowDownLeft },
+	{ label: "Outflow", value: "outflow", kind: "out", icon: ArrowUpRight },
+	{ label: "Transfer", value: "transfer", kind: "tr", icon: ArrowLeftRight },
+];
+
+const NOTE_PLACEHOLDER: Record<TransactionType, string> = {
+	inflow: "e.g. November pay",
+	outflow: "e.g. Shoprite run",
+	transfer: "e.g. Cash for the week",
+};
+
+const sourceLabel = (s: Source) =>
+	s.balance === undefined ? s.name : `${s.name} · ${formatCurrency(s.balance, s.currency)}`;
+
 export default function AddTransactionModal({
 	open,
 	setOpen,
 	onCreated,
+	initialType = "inflow",
 }: Props) {
-	const { isAllView } = useSpace();
+	const { isAllView, activeSpace } = useSpace();
 	const [activeTab, setActiveTab] = useState<TransactionType>("inflow");
 	const [amount, setAmount] = useState("");
 	const [category, setCategory] = useState("");
@@ -54,12 +72,6 @@ export default function AddTransactionModal({
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isLoadingSources, setIsLoadingSources] = useState(false);
 	const [isLoadingCategories, setIsLoadingCategories] = useState(false);
-
-	const tabs: { label: string; value: TransactionType }[] = [
-		{ label: "Inflow", value: "inflow" },
-		{ label: "Outflow", value: "outflow" },
-		{ label: "Transfer", value: "transfer" },
-	];
 
 	const fetchSources = async () => {
 		try {
@@ -89,6 +101,7 @@ export default function AddTransactionModal({
 
 	useEffect(() => {
 		if (open) {
+			setActiveTab(initialType);
 			fetchSources();
 			fetchCategories();
 		}
@@ -121,7 +134,7 @@ export default function AddTransactionModal({
 		setTransferTarget("");
 	};
 
-	// Enter in a text field saves (Selects handle their own Enter).
+	// Enter in a text field saves (selects keep their own keyboard behaviour).
 	const handleKeyDown = (e: KeyboardEvent) => {
 		if (e.key === "Enter" && !isSubmitting) {
 			e.preventDefault();
@@ -190,151 +203,206 @@ export default function AddTransactionModal({
 		}
 	};
 
+	const isTransfer = activeTab === "transfer";
+	const categoryPlaceholder = isLoadingCategories
+		? "Loading categories…"
+		: filteredCategories.length === 0
+			? "No categories available"
+			: "Select category";
+
+	// Save takes the colour of the flow: green in, red out, brand for a transfer.
+	const saveButton: { className: string; style?: CSSProperties } =
+		activeTab === "inflow"
+			? { className: "btn btn-success btn-lg" }
+			: activeTab === "transfer"
+				? { className: "btn btn-primary btn-lg" }
+				: { className: "btn btn-danger-fill btn-lg" };
+
 	return (
 		<UniversalModal
 			open={open}
 			onOpenChange={setOpen}
-			title="Add a Transaction"
-			description="Fill in the details to create a new transaction."
+			title="Add transaction"
+			description={
+				isAllView ? (
+					"Open a space first — transactions belong to a single space."
+				) : (
+					<>
+						Recording in <strong className="t-fg2">{activeSpace?.name ?? "this space"}</strong>
+					</>
+				)
+			}
 			footer={
-				<div className="w-full flex flex-col gap-3">
-					<Button
+				<>
+					<span className="hint grow row-f hide-m">
+						<Info className="ic ic-sm" aria-hidden="true" />
+						{isTransfer
+							? "Moves money between sources. Totals stay the same."
+							: "The source balance updates as soon as you save."}
+					</span>
+					<button className="btn btn-ghost btn-lg" type="button" onClick={() => setOpen(false)}>
+						Cancel
+					</button>
+					<button
+						type="button"
 						onClick={handleSubmit}
 						disabled={isSubmitting}
-						className="bg-success/70">
-						{isSubmitting ? "Saving..." : "Save Transaction"}
-					</Button>
-				</div>
+						className={saveButton.className}
+						style={saveButton.style}>
+						{isSubmitting ? "Saving…" : "Save transaction"}
+					</button>
+				</>
 			}>
-			<div className="space-y-2 w-full">
-				<ul className="bg-surface-sunken w-full flex items-center justify-around rounded-xl p-1">
-					{tabs.map((tab) => (
-						<li
+			<div className="seg seg-block seg-lg" role="group" aria-label="Transaction type">
+				{TABS.map((tab) => {
+					const Icon = tab.icon;
+					const on = activeTab === tab.value;
+					return (
+						<button
 							key={tab.value}
-							onClick={() => setActiveTab(tab.value)}
-							className={`cursor-pointer px-4 py-1 rounded-lg text-sm font-medium transition-all duration-300 ease-in-out ${
-								activeTab === tab.value
-									? "bg-card shadow text-foreground"
-									: "text-muted-foreground hover:bg-surface-sunken"
-							}`}>
+							type="button"
+							className={`seg-i ${tab.kind}${on ? " on" : ""}`}
+							aria-pressed={on}
+							onClick={() => setActiveTab(tab.value)}>
+							<Icon className="ic ic-sm" aria-hidden="true" />
 							{tab.label}
-						</li>
-					))}
-				</ul>
+						</button>
+					);
+				})}
+			</div>
 
-				<div className="bg-card w-full flex flex-col items-start rounded-xl p-3 space-y-1">
-					<div className="flex flex-col items-start py-2 space-y-2 w-full">
-						<label
-							htmlFor="amount"
-							className="text-sm font-medium text-foreground">
-							Amount
-						</label>
-						<Input
-							id="amount"
-							inputMode="decimal"
-							value={amount}
-							onChange={(e) => setAmount(formatMoneyInput(e.target.value))}
-							onKeyDown={handleKeyDown}
-							placeholder="₦0.00"
-							className="placeholder:text-lg placeholder:text-muted-foreground w-full"
-						/>
+			<div className="field">
+				<label className="label" htmlFor="tx-amount">
+					Amount
+				</label>
+				<div className="control">
+					<span className="cur" aria-hidden="true">
+						₦
+					</span>
+					<input
+						id="tx-amount"
+						className="input input-amt"
+						inputMode="decimal"
+						placeholder="0.00"
+						autoComplete="off"
+						value={amount}
+						onChange={(e) => setAmount(formatMoneyInput(e.target.value))}
+						onKeyDown={handleKeyDown}
+					/>
+				</div>
+			</div>
+
+			<div className="form-grid">
+				<div className="field">
+					<label className="label" htmlFor="tx-date">
+						Date
+					</label>
+					<input
+						id="tx-date"
+						className="input"
+						type="date"
+						value={date}
+						onChange={(e) => setDate(e.target.value)}
+						onKeyDown={handleKeyDown}
+					/>
+				</div>
+
+				<div className="field">
+					<label className="label" htmlFor="tx-source">
+						{isTransfer ? "From source" : "Source"}
+					</label>
+					<div className="control">
+						<select
+							id="tx-source"
+							className="input select"
+							value={source}
+							onChange={(e) => {
+								const next = e.target.value;
+								setSource(next);
+								// Don't leave the target pointing at the new "from" source.
+								if (next === transferTarget) setTransferTarget("");
+							}}>
+							<option value="" disabled>
+								{isLoadingSources
+									? "Loading sources…"
+									: sources.length === 0
+										? "No sources yet"
+										: "Select source"}
+							</option>
+							{sources.map((src) => (
+								<option key={src.id} value={src.id}>
+									{sourceLabel(src)}
+								</option>
+							))}
+						</select>
+						<ChevronDown className="ic ic-sm ic-end" aria-hidden="true" />
 					</div>
+				</div>
 
-					<div className="flex flex-col items-start py-2 space-y-2 w-full">
-						<label
-							htmlFor="date"
-							className="text-sm font-medium text-foreground">
-							Date
+				{isTransfer && (
+					<div className="field">
+						<label className="label" htmlFor="tx-target">
+							To source
 						</label>
-						<Input
-							id="date"
-							type="date"
-							value={date}
-							onChange={(e) => setDate(e.target.value)}
-							onKeyDown={handleKeyDown}
-							className="w-full"
-						/>
-					</div>
-
-					<div className="w-full flex flex-col items-start py-2 space-y-2">
-						<label className="text-sm font-medium text-foreground">Source</label>
-						<Select value={source} onValueChange={setSource}>
-							<SelectTrigger>
-								<SelectValue
-									placeholder={
-										isLoadingSources ? "Loading sources..." : "Select source"
-									}
-								/>
-							</SelectTrigger>
-							<SelectContent>
-								{sources.map((src) => (
-									<SelectItem key={src.id} value={src.id}>
-										{src.name}
-									</SelectItem>
+						<div className="control">
+							<select
+								id="tx-target"
+								className="input select"
+								value={transferTarget}
+								onChange={(e) => setTransferTarget(e.target.value)}>
+								<option value="" disabled>
+									Select target source
+								</option>
+								{transferTargetOptions.map((src) => (
+									<option key={src.id} value={src.id}>
+										{sourceLabel(src)}
+									</option>
 								))}
-							</SelectContent>
-						</Select>
-					</div>
-
-					<div className="flex flex-col items-start py-2 space-y-2 w-full">
-						<label className="text-sm font-medium text-foreground">
-							Category
-						</label>
-						<Select
-							value={category}
-							onValueChange={setCategory}
-							disabled={filteredCategories.length === 0}>
-							<SelectTrigger className="w-full">
-								<SelectValue
-									placeholder={
-										isLoadingCategories
-											? "Loading categories..."
-											: filteredCategories.length === 0
-												? "No categories available"
-												: "Select category"
-									}
-								/>
-							</SelectTrigger>
-							<SelectContent>
-								{filteredCategories.map((cat) => (
-									<SelectItem key={cat.id} value={cat.name}>
-										{cat.name}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-
-					<div className="flex flex-col items-start py-2 space-y-2 w-full">
-						<label className="text-sm font-medium text-foreground">Notes</label>
-						<Input
-							placeholder="Optional note"
-							value={note}
-							onChange={(e) => setNote(e.target.value)}
-							onKeyDown={handleKeyDown}
-							className="placeholder:text-lg placeholder:text-muted-foreground w-full"
-						/>
-					</div>
-
-					{activeTab === "transfer" && (
-						<div className="flex flex-col items-start py-2 space-y-2 w-full">
-							<label className="text-sm font-medium text-foreground">
-								Transfer Target
-							</label>
-							<Select value={transferTarget} onValueChange={setTransferTarget}>
-								<SelectTrigger>
-									<SelectValue placeholder="Select target source" />
-								</SelectTrigger>
-								<SelectContent>
-									{transferTargetOptions.map((src) => (
-										<SelectItem key={src.id} value={src.id}>
-											{src.name}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+							</select>
+							<ChevronDown className="ic ic-sm ic-end" aria-hidden="true" />
 						</div>
-					)}
+					</div>
+				)}
+
+				<div className={`field${isTransfer ? "" : " full"}`}>
+					<label className="label" htmlFor="tx-category">
+						Category
+					</label>
+					<div className="control">
+						<select
+							id="tx-category"
+							className="input select"
+							value={category}
+							disabled={filteredCategories.length === 0}
+							onChange={(e) => setCategory(e.target.value)}>
+							<option value="" disabled>
+								{categoryPlaceholder}
+							</option>
+							{filteredCategories.map((cat) => (
+								<option key={cat.id} value={cat.name}>
+									{cat.name}
+								</option>
+							))}
+						</select>
+						<ChevronDown className="ic ic-sm ic-end" aria-hidden="true" />
+					</div>
+				</div>
+
+				<div className="field full">
+					<label className="label" htmlFor="tx-note">
+						Note{" "}
+						<span className="t-muted" style={{ fontWeight: 500 }}>
+							(optional)
+						</span>
+					</label>
+					<input
+						id="tx-note"
+						className="input"
+						placeholder={NOTE_PLACEHOLDER[activeTab]}
+						value={note}
+						onChange={(e) => setNote(e.target.value)}
+						onKeyDown={handleKeyDown}
+					/>
 				</div>
 			</div>
 		</UniversalModal>

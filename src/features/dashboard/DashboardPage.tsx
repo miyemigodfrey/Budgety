@@ -1,188 +1,251 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { FileText, Plus, Wallet } from "lucide-react";
-import AddSourceModal from "@/features/addsource/sourceModal";
-import budgetydash from "@/assets/budgety-dashboard.png";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-import { useCallback, useEffect, useState } from "react";
-import { EmptyState, ErrorState } from "@/components/EmptyState";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ErrorState } from "@/components/EmptyState";
+import { useSpace } from "@/hooks/useSpace";
+import { useQuickAdd } from "@/components/app/QuickAdd";
+import { useMe } from "@/components/layout/Sidebar";
+import { span } from "@/components/app/grid";
 import type { Status } from "@/lib/status";
-import AddTransactionModal from "../transactions/transactionModal";
-import { formatDate } from "@/lib/formatDate";
-import { formatCurrency } from "@/lib/formatCurrency";
 import { getSources, type SourceDto } from "@/api/sources";
+import { getTransactionOverview, type TransactionOverviewDto } from "@/api/overview";
+import {
+	getTransactions,
+	getTrends,
+	type Granularity,
+	type TransactionDto,
+	type TrendPoint,
+} from "@/api/transaction";
+import { getLists, type ShoppingList } from "@/api/shopping";
+import { getDiscrepancies } from "@/api/reconcilation";
+import {
+	BalanceHero,
+	CashFlowCard,
+	CategoryCard,
+	DashboardSkeleton,
+	RecentCard,
+	ShoppingCard,
+	SourcesCard,
+	StatCard,
+	pickShoppingList,
+	type CategorySlice,
+} from "./cards";
+import { FirstRun } from "./FirstRun";
+import { firstName, greeting, inMonth, monthName, todayOver } from "./format";
 
-export function TableDemo() {
-	const [sources, setSources] = useState<SourceDto[]>([]);
+/** Outflows this month grouped by category: top four, the rest as "Other". */
+function categorySlices(txs: TransactionDto[]): { slices: CategorySlice[]; total: bigint } {
+	const by = new Map<string, bigint>();
+	let total = 0n;
+	for (const t of txs) {
+		if (t.type !== "outflow" || !inMonth(t.date)) continue;
+		const key = t.category?.trim() || "Uncategorised";
+		by.set(key, (by.get(key) ?? 0n) + t.amount);
+		total += t.amount;
+	}
+	const sorted = [...by.entries()]
+		.map(([name, amount]) => ({ name, amount }))
+		.sort((a, b) => (b.amount > a.amount ? 1 : b.amount < a.amount ? -1 : 0));
+	if (sorted.length <= 5) return { slices: sorted, total };
+	const top = sorted.slice(0, 4);
+	const rest = sorted.slice(4).reduce((s, c) => s + c.amount, 0n);
+	return { slices: [...top, { name: "Other", amount: rest }], total };
+}
+
+const sumFlow = (txs: TransactionDto[], type: "inflow" | "outflow", offset: number) =>
+	txs
+		.filter((t) => t.type === type && inMonth(t.date, offset))
+		.reduce((s, t) => s + t.amount, 0n);
+
+type Data = {
+	overview: TransactionOverviewDto;
+	sources: SourceDto[];
+	transactions: TransactionDto[];
+};
+
+function Dashboard() {
+	const { isAllView, activeSpace } = useSpace();
+	const { openAddTransaction, refreshPage } = useQuickAdd();
+	const me = useMe();
+
+	const [data, setData] = useState<Data | null>(null);
 	const [status, setStatus] = useState<Status>("loading");
-
 	const [reloadKey, setReloadKey] = useState(0);
-
 	const reload = useCallback(() => {
 		setStatus("loading");
 		setReloadKey((k) => k + 1);
 	}, []);
 
+	// Secondary panels load on their own and never block the page.
+	const [shopping, setShopping] = useState<ShoppingList | null>(null);
+	const [lastReconciled, setLastReconciled] = useState<Date | null | undefined>(undefined);
+
+	const [granularity, setGranularity] = useState<Granularity>("monthly");
+	const [trend, setTrend] = useState<TrendPoint[] | undefined>(undefined);
+	const [trendError, setTrendError] = useState(false);
+	const [trendKey, setTrendKey] = useState(0);
+
 	useEffect(() => {
 		let cancelled = false;
-
-		async function fetchData() {
-			try {
-				const sourceData = await getSources();
+		Promise.all([getTransactionOverview(), getSources(), getTransactions()])
+			.then(([overview, sources, transactions]) => {
 				if (cancelled) return;
-				setSources(sourceData);
+				setData({ overview, sources, transactions });
 				setStatus("ready");
-			} catch (error) {
+			})
+			.catch((error) => {
 				if (cancelled) return;
-				console.error("Failed to fetch data:", error);
+				console.error("Failed to load dashboard:", error);
 				setStatus("error");
-			}
-		}
-
-		fetchData();
+			});
+		getLists()
+			.then((lists) => !cancelled && setShopping(pickShoppingList(lists) ?? null))
+			.catch((e) => console.error("Failed to load shopping lists:", e));
+		getDiscrepancies()
+			.then((rows) => {
+				if (cancelled) return;
+				const latest = rows.reduce<Date | null>((acc, r) => {
+					const d = new Date(r.reconciledAt);
+					return !acc || d > acc ? d : acc;
+				}, null);
+				setLastReconciled(latest);
+			})
+			.catch((e) => console.error("Failed to load reconciliations:", e));
 		return () => {
 			cancelled = true;
 		};
 	}, [reloadKey]);
 
-	if (status === "loading") {
+	// The chart refetches on its own when the granularity changes.
+	useEffect(() => {
+		let cancelled = false;
+		setTrend(undefined);
+		setTrendError(false);
+		getTrends(6, granularity)
+			.then((t) => !cancelled && setTrend(t.totalsByMonth))
+			.catch((e) => {
+				if (cancelled) return;
+				console.error("Failed to load cash flow:", e);
+				setTrendError(true);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [granularity, reloadKey, trendKey]);
+
+	const derived = useMemo(() => {
+		if (!data) return null;
+		const tx = data.transactions;
+		return {
+			cats: categorySlices(tx),
+			inflowPrev: sumFlow(tx, "inflow", -1),
+			outflowPrev: sumFlow(tx, "outflow", -1),
+		};
+	}, [data]);
+
+	if (status === "loading") return <DashboardSkeleton />;
+
+	if (status === "error" || !data || !derived) {
 		return (
-			<div className="space-y-2 py-2">
-				{[0, 1, 2].map((i) => (
-					<Skeleton key={i} className="w-full h-10" />
-				))}
-			</div>
+			<main className="page">
+				<ErrorState message="Couldn't load your dashboard." onRetry={reload} />
+			</main>
 		);
 	}
 
-	if (status === "error") {
-		return (
-			<ErrorState message="Couldn't load your sources." onRetry={reload} />
-		);
-	}
+	const name = firstName(me?.name);
+	const spaceLabel = isAllView ? "All spaces" : (activeSpace?.name ?? "this space");
+	const { overview, sources, transactions } = data;
 
-	if (sources.length === 0) {
+	// Brand-new space: no sources, or sources but nothing recorded yet.
+	if (sources.length === 0 || transactions.length === 0) {
 		return (
-			<EmptyState
-				icon={Wallet}
-				title="No sources yet"
-				description="Add your first money source to get started."
+			<FirstRun
+				name={name}
+				sources={sources}
+				totalBalance={overview.totalBalance}
+				onChanged={refreshPage}
 			/>
 		);
 	}
 
 	return (
-		<>
-			<Table>
-				<TableHeader>
-					<TableRow>
-						<TableHead>Source</TableHead>
-						<TableHead className="text-right">Initial</TableHead>
-						<TableHead className="text-right">Current</TableHead>
-					</TableRow>
-				</TableHeader>
-				<TableBody>
-					{sources.map((source) => {
-						return (
-							<TableRow key={source.id}>
-								<TableCell className="font-semibold">
-									<span className="flex items-center gap-x-1.5">
-										<FileText size={16} className="text-success shrink-0" />
-										<span className="truncate">{source.name}</span>
-									</span>
-									<span className="block pl-[22px] text-xs font-normal text-muted-foreground">
-										{formatDate(source.createdAt)}
-									</span>
-								</TableCell>
-								<TableCell className="text-right text-muted-foreground whitespace-nowrap">
-									{formatCurrency(source.initialBalance, source.currency)}
-								</TableCell>
-								<TableCell className="text-right font-semibold whitespace-nowrap">
-									{formatCurrency(source.balance, source.currency)}
-								</TableCell>
-							</TableRow>
-						);
-					})}
-				</TableBody>
-			</Table>
-		</>
-	);
-}
-
-function Dashboard() {
-	const [open, setOpen] = useState(false);
-	const [transactionOpen, setTransactionOpen] = useState(false);
-
-	return (
-		<div className="min-h-screen w-full flex flex-col items-center py-6 px-4">
-			{/* HEADER */}
-			<header className="w-full max-w-5xl">
-				<div className="flex items-center justify-between p-2">
-					<h1 className="font-bold text-2xl">Budgety</h1>
+		<main className="page">
+			<div className="page-h">
+				<div className="page-h-text">
+					<p className="t-over">{todayOver()}</p>
+					<h1 className="t-h1">
+						{greeting()}
+						{name ? `, ${name}` : ""}
+					</h1>
+					<p className="t-muted">
+						{isAllView ? (
+							<>
+								Here’s where your money stands across <strong className="t-fg2">all spaces</strong>.
+							</>
+						) : (
+							<>
+								Here’s where your money stands in <strong className="t-fg2">{spaceLabel}</strong>.
+							</>
+						)}
+					</p>
 				</div>
-			</header>
+			</div>
 
-			<div className="flex-1 w-full max-w-5xl flex flex-col items-center mt-6">
-				{/* IMAGE + SETUP SECTION */}
-				<div className="w-full flex flex-col lg:flex-row gap-8 items-center lg:items-start">
-					{/* IMAGE */}
+			<div className="g g-stretch">
+				<BalanceHero
+					overview={overview}
+					sourceCount={sources.length}
+					spaceLabel={spaceLabel}
+					readOnly={isAllView}
+					onAdd={openAddTransaction}
+				/>
 
-					<img
-						src={budgetydash.src}
-						alt="Dashboard illustration"
-						className="w-full md:w-[90%] lg:w-[45%] drop-shadow-2xl rounded-xl border border-border contrast-125 saturate-125"
-					/>
-
-					{/* SETUP CARD */}
-					<div className="w-full md:w-full p-5 bg-card md:bg-inherit rounded-3xl shadow-2xl md:shadow-none flex flex-col items-center gap-y-3 text-center">
-						<div className="space-y-2">
-							<h2 className="text-2xl md:text-[34px] lg:text-[50px] font-semibold">
-								Set Up your Budget Workspace
-							</h2>
-							<span className="text-muted-foreground md:text-xl">
-								A smart way to manage your budget with budgety
-							</span>
-						</div>
-						<Button
-							className="w-full bg-brand"
-							onClick={() => setOpen(true)}>
-							Start Setup
-						</Button>
+				<div style={span({ d: 6, t: 12 })}>
+					<div className="g g-stretch" style={{ height: "100%" }}>
+						<StatCard
+							kind="in"
+							current={overview.monthly.inflow}
+							previous={derived.inflowPrev}
+							previousMonth={monthName(-1)}
+						/>
+						<StatCard
+							kind="out"
+							current={overview.monthly.outflow}
+							previous={derived.outflowPrev}
+							previousMonth={monthName(-1)}
+						/>
+						{shopping && <ShoppingCard list={shopping} />}
 					</div>
 				</div>
 
-				{/* TABLE BELOW */}
-				<div className="mt-8 w-full p-6 bg-card rounded-xl shadow-md">
-					<h3 className="font-semibold md:text-3xl mb-3">
-						Set Up Your Sources
-					</h3>
-					<TableDemo />
-					<div className="w-full mt-4">
-						<Button
-							onClick={() => setTransactionOpen(true)}
-							className="w-full bg-brand md:py-3">
-							<Plus size={26} className="text-brand-foreground" />
-							<span>Add Transaction</span>
-						</Button>
-					</div>
-				</div>
+				<CashFlowCard
+					granularity={granularity}
+					onGranularity={setGranularity}
+					series={trend}
+					error={trendError}
+					onRetry={() => setTrendKey((k) => k + 1)}
+				/>
 
-				<AddSourceModal open={open} setOpen={setOpen} />
-				<AddTransactionModal
-					open={transactionOpen}
-					setOpen={setTransactionOpen}
+				<CategoryCard
+					slices={derived.cats.slices}
+					total={derived.cats.total}
+					monthLabel={monthName(0)}
+				/>
+
+				<RecentCard
+					txs={overview.recentTransactions.slice(0, 6)}
+					spaceLabel={spaceLabel}
+					isAllView={isAllView}
+				/>
+
+				<SourcesCard
+					sources={sources}
+					totalBalance={overview.totalBalance}
+					lastReconciled={lastReconciled}
 				/>
 			</div>
-		</div>
+		</main>
 	);
 }
 

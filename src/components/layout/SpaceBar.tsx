@@ -1,37 +1,82 @@
 "use client";
 
-import { Link } from "react-router-dom";
-import { Layers, ChevronRight, Eye } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { ChevronRight, Eye, Moon, Plus, Sun } from "lucide-react";
 import { useSpace } from "@/hooks/useSpace";
+import { useTheme } from "@/hooks/useTheme";
+import { useQuickAdd } from "@/components/app/QuickAdd";
+import { LogoMark } from "@/components/app/LogoMark";
+import { pageTitle } from "@/lib/navItems";
+import { SpaceSwitch, initialOf, useMe } from "./Sidebar";
+
+function ThemeButton() {
+	const { theme, toggleTheme } = useTheme();
+	const dark = theme === "dark";
+	return (
+		<button
+			type="button"
+			className="btn btn-ghost btn-icon"
+			onClick={toggleTheme}
+			aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}>
+			{dark ? <Sun className="ic" /> : <Moon className="ic" />}
+		</button>
+	);
+}
 
 /**
- * Thin bar above every page showing which space is open (or the read-only
- * "All" view). Tapping it goes to the Spaces page to switch or manage spaces.
+ * Top of every signed-in page: the desktop/tablet top bar (breadcrumb, theme,
+ * Add transaction) and the phone top bar (logo, space switch, theme, avatar).
  */
 export default function SpaceBar() {
-	const { activeSpace, isAllView, loading } = useSpace();
-
-	const label = isAllView ? "All spaces" : (activeSpace?.name ?? "…");
+	const { pathname } = useLocation();
+	const { activeSpace, isAllView } = useSpace();
+	const { openAddTransaction } = useQuickAdd();
+	const me = useMe();
+	const space = isAllView ? "All spaces" : (activeSpace?.name ?? "…");
 
 	return (
-		<div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-border bg-card/80 px-3 py-2 backdrop-blur md:px-6">
-			<Link
-				to="/spaces"
-				className="flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium hover:bg-muted">
-				<Layers size={16} className="text-brand" />
-				<span className="text-muted-foreground">Space</span>
-				<ChevronRight size={14} className="text-muted-foreground" />
-				<span className="font-semibold text-foreground">
-					{loading ? "…" : label}
-				</span>
-			</Link>
+		<>
+			<header className="mtop">
+				<Link to="/dashboard" aria-label="Budgety home">
+					<LogoMark id="mtop" size={32} />
+				</Link>
+				<SpaceSwitch compact />
+				<div className="mtop-actions">
+					<ThemeButton />
+					<Link
+						to="/profile"
+						className="avatar"
+						aria-label="Profile"
+						style={{ width: 34, height: 34, fontSize: 13 }}>
+						{initialOf(me?.name ?? me?.email)}
+					</Link>
+				</div>
+			</header>
 
-			{isAllView && (
-				<span className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-					<Eye size={12} />
-					View only
-				</span>
-			)}
-		</div>
+			<header className="topbar">
+				<div className="crumbs">
+					<Link to="/spaces" className="trunc">
+						{space}
+					</Link>
+					<ChevronRight className="ic ic-xs" />
+					<strong className="trunc">{pageTitle(pathname)}</strong>
+				</div>
+				{isAllView && (
+					<span className="view-only">
+						<Eye className="ic ic-xs" />
+						View only
+					</span>
+				)}
+				<div className="topbar-actions">
+					<ThemeButton />
+					{!isAllView && (
+						<button type="button" className="btn btn-primary" onClick={openAddTransaction}>
+							<Plus className="ic ic-sm" />
+							Add transaction
+						</button>
+					)}
+				</div>
+			</header>
+		</>
 	);
 }

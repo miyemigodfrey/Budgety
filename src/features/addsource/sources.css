@@ -1,0 +1,31 @@
+/* Sources pages: the few bits the canvas wrote as inline styles, on top of
+   budgety.css. Same layer as budgety.css so its :hover rules still win. */
+@layer components {
+	.card.src-card { gap: 14px; padding: 18px 20px; transition: border-color 0.15s; }
+	.card.src-card:hover { border-color: var(--border-strong); }
+	.card.src-add {
+		width: 100%; display: flex; align-items: center; gap: 14px; text-align: left; color: var(--brand);
+		border-style: dashed; border-width: 1.5px; border-color: var(--brand-line); background: transparent; box-shadow: none;
+	}
+	.src-add:hover:not([disabled]) { background: var(--brand-soft); }
+	.src-add[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+	.card.src-menu { z-index: 20; width: 260px; padding: 6px; box-shadow: var(--shadow-lg); }
+	.src-menu .nav-i { width: 100%; border: 0; background: transparent; cursor: pointer; outline: none; }
+	.src-menu .nav-i[data-highlighted] { background: var(--surface-2); color: var(--fg); }
+	.src-menu .nav-i[data-disabled] { opacity: 0.45; cursor: not-allowed; }
+	.src-menu .nav-i.out, .src-menu .nav-i.out[data-highlighted] { color: var(--danger); align-items: flex-start; text-align: left; }
+	.src-menu-sep { height: 1px; background: var(--border); margin: 6px 4px; }
+
+	.btn-link { border: 0; background: transparent; padding: 0; }
+	.seg-fit { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+	.src-stat { background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+	.src-stat .stat-v { font-size: 22px; }
+	.src-note { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--brand-soft); color: var(--fg-2); font-size: 13px; }
+	.li.src-sel { background: var(--brand-soft); }
+	.li.src-sel:hover { background: var(--brand-soft); }
+
+	@media (max-width: 639px) {
+		.card.src-card { padding: 16px; }
+	}
+}

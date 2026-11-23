@@ -1,13 +1,14 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useId, useState } from "react";
+import { Plus } from "lucide-react";
 import UniversalModal from "@/components/ui/modal";
-import { useState } from "react";
 import { createSource, type Source } from "@/api/sources";
 import { useSpace } from "@/hooks/useSpace";
 import { parseMoneyInput, formatMoneyInput } from "@/lib/money";
+import { getErrorMessage } from "@/lib/apiError";
 import { toast } from "react-toastify";
+import { sourceLook } from "./sourceUi";
 
 type Props = {
 	open: boolean;
@@ -15,9 +16,14 @@ type Props = {
 	onCreated?: (data: Source) => void;
 };
 
+/** Quick-pick names under the name field (one tap fills it in). */
+const PICKS = ["Access Bank", "Opay", "Kuda", "Cash"];
+
 export default function AddSourceModal({ open, setOpen, onCreated }: Props) {
+	const id = useId();
 	const [name, setName] = useState("");
 	const [balance, setBalance] = useState("");
+	const [isSaving, setIsSaving] = useState(false);
 	const { activeSpaceId, activeSpace, isAllView, refreshSpaces } = useSpace();
 
 	const handleSubmit = async () => {
@@ -41,6 +47,7 @@ export default function AddSourceModal({ open, setOpen, onCreated }: Props) {
 		}
 
 		try {
+			setIsSaving(true);
 			const created = await createSource({
 				name: name.trim(),
 				balance: parsedBalance,
@@ -55,8 +62,10 @@ export default function AddSourceModal({ open, setOpen, onCreated }: Props) {
 			setBalance("");
 			setOpen(false);
 		} catch (error) {
-			toast.error("Failed to create source:");
-			throw error;
+			console.error("Failed to create source:", error);
+			toast.error(getErrorMessage(error, "Failed to create source"));
+		} finally {
+			setIsSaving(false);
 		}
 	};
 
@@ -64,51 +73,102 @@ export default function AddSourceModal({ open, setOpen, onCreated }: Props) {
 		<UniversalModal
 			open={open}
 			onOpenChange={setOpen}
-			title="Add a Source"
+			title="Add a source"
 			description={
-				isAllView
-					? "Open a space first — sources belong to a single space."
-					: `New source in "${activeSpace?.name ?? "this space"}".`
+				isAllView ? (
+					"Open a space first — sources belong to a single space."
+				) : (
+					<>
+						A bank account, wallet or cash in{" "}
+						<strong className="t-fg2">{activeSpace?.name ?? "this space"}</strong>.
+					</>
+				)
 			}
 			footer={
-				<div className="w-full flex flex-col gap-3">
-					<Button className="bg-success/70" onClick={handleSubmit}>
-						Save Source
-					</Button>
-
-					<Button variant="ghost" onClick={() => setOpen(false)}>
-						Maybe Later
-					</Button>
-				</div>
+				<>
+					<button type="button" className="btn btn-ghost btn-lg grow" onClick={() => setOpen(false)}>
+						Maybe later
+					</button>
+					<button
+						type="button"
+						className="btn btn-primary btn-lg grow"
+						disabled={isSaving || isAllView}
+						onClick={handleSubmit}>
+						<Plus className="ic ic-sm" />
+						{isSaving ? "Adding…" : "Add source"}
+					</button>
+				</>
 			}>
-			<div className="space-y-5 w-full">
-				<div className="bg-card w-full flex flex-col items-start rounded-xl p-3 space-y-2  ">
-					<label htmlFor="name" className="text-sm font-medium text-foreground">
-						Source Name
+			<form
+				className="stack"
+				style={{ gap: 16 }}
+				onSubmit={(e) => e.preventDefault()}
+				onKeyDown={(e) => {
+					// Enter in either text field saves.
+					if (e.key === "Enter" && e.target instanceof HTMLInputElement) {
+						e.preventDefault();
+						if (!isSaving) void handleSubmit();
+					}
+				}}>
+				<div className="field">
+					<label className="label" htmlFor={`${id}-name`}>
+						Source name
 					</label>
-					<Input
+					<input
+						id={`${id}-name`}
+						className="input"
+						type="text"
 						value={name}
 						onChange={(e) => setName(e.target.value)}
-						placeholder="eg. Salary, Bank, Cash"
-						className="placeholder:text-sm"
+						placeholder="e.g. Opay, Access Bank, Cash"
+						autoComplete="off"
 					/>
+					<div className="row-f wrap" style={{ gap: 8, marginTop: 4 }} role="group" aria-label="Quick pick">
+						<span className="t-xs t-muted" aria-hidden="true">
+							Quick pick:
+						</span>
+						{PICKS.map((label, i) => {
+							const { Icon } = sourceLook(label, i);
+							const on = name === label;
+							return (
+								<button
+									key={label}
+									type="button"
+									className={`chip${on ? " on" : ""}`}
+									style={{ height: 30, padding: "0 12px", fontSize: 12 }}
+									aria-pressed={on}
+									onClick={() => setName(label)}>
+									<Icon className="ic ic-xs" />
+									{label}
+								</button>
+							);
+						})}
+					</div>
 				</div>
 
-				<div className="bg-card w-full flex flex-col items-start rounded-xl p-3 space-y-2 ">
-					<label
-						htmlFor="balance"
-						className="text-sm font-medium text-foreground">
-						Opening Balance
+				<div className="field">
+					<label className="label" htmlFor={`${id}-balance`}>
+						Opening balance
 					</label>
-					<Input
-						value={balance}
-						onChange={(e) => setBalance(formatMoneyInput(e.target.value))}
-						inputMode="decimal"
-						placeholder="₦ 0.00"
-						className="placeholder:text-foreground placeholder:font-semibold"
-					/>
+					<div className="control">
+						<span className="cur" aria-hidden="true">
+							₦
+						</span>
+						<input
+							id={`${id}-balance`}
+							className="input input-amt"
+							value={balance}
+							onChange={(e) => setBalance(formatMoneyInput(e.target.value))}
+							inputMode="decimal"
+							placeholder="0.00"
+							aria-describedby={`${id}-balance-hint`}
+						/>
+					</div>
+					<span className="hint" id={`${id}-balance-hint`}>
+						What’s in it right now. You can reconcile against the real figure any time.
+					</span>
 				</div>
-			</div>
+			</form>
 		</UniversalModal>
 	);
 }

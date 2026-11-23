@@ -1,0 +1,16 @@
+/* Transactions page — the few layout bits the canvas wrote as inline styles,
+   on top of budgety.css. Same layer as budgety.css so its :hover rules still win. */
+@layer components {
+	.tx-filters { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid var(--border); }
+	.tx-cols {
+		display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.1fr) 96px minmax(128px, 0.9fr) 36px;
+		gap: 16px; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border);
+	}
+	.tx-cols.tx-head { padding: 10px 20px; background: var(--surface-2); }
+	/* Mobile rows are <li><button class="li"> so the row is one tap target. */
+	.tx-list > li + li > .li { border-top: 1px solid var(--border); }
+	.tx-tap { width: 100%; border: 0; text-align: left; }
+	@media (max-width: 639px) {
+		.tx-filters { padding: 14px 16px; }
+	}
+}

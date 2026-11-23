@@ -6,34 +6,40 @@ import Navbar from "./Navbar";
 import SpaceBar from "./SpaceBar";
 import { PinLockGate } from "./PinLockGate";
 import { useSpace } from "@/hooks/useSpace";
+import { QuickAddProvider, useQuickAdd } from "@/components/app/QuickAdd";
 
-export default function AppContainer({
-	children,
-}: {
-	children: React.ReactNode;
-}) {
-	const { activeSpaceId } = useSpace();
-
+/**
+ * The signed-in shell from the redesign: full sidebar on desktop and laptop,
+ * an icon rail on tablet, and a top bar with bottom tabs on phones. Layout
+ * classes (.shell, .side, .main, .topbar, .mtop, .tabbar) live in budgety.css.
+ */
+export default function AppContainer({ children }: { children: React.ReactNode }) {
 	return (
 		<PinLockGate>
-			<div className="min-h-screen flex bg-app-background">
-				<aside className="hidden md:flex md:w-56 lg:w-64 bg-card border-r border-border p-4 fixed top-0 left-0 bottom-0 z-20">
-					<Sidebar />
-				</aside>
+			<QuickAddProvider>
+				<Shell>{children}</Shell>
+			</QuickAddProvider>
+		</PinLockGate>
+	);
+}
 
-				<div className="flex-1 flex flex-col min-h-screen pb-16 md:pb-0 md:ml-56 lg:ml-64">
+function Shell({ children }: { children: React.ReactNode }) {
+	const { activeSpaceId } = useSpace();
+	const { dataVersion } = useQuickAdd();
+	return (
+		<div className="app">
+			<div className="shell">
+				<Sidebar />
+				<div className="main">
 					<SpaceBar />
-					{/* Keying on the active space remounts the page subtree on a switch,
-					    so every page's fetch effect re-runs and picks up the new scope. */}
-					<main
-						key={activeSpaceId ?? "all"}
-						className="flex-1 md:overflow-y-auto p-2 md:p-6">
+					{/* Keying on the active space (and on shell-level data changes such
+					    as a quick add) remounts the page, so its fetch effects re-run. */}
+					<React.Fragment key={`${activeSpaceId ?? "all"}:${dataVersion}`}>
 						{children}
-					</main>
-
+					</React.Fragment>
 					<Navbar />
 				</div>
 			</div>
-		</PinLockGate>
+		</div>
 	);
 }

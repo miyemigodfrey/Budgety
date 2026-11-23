@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import UniversalModal from "@/components/ui/modal";
-import { Button } from "@/components/ui/button";
 import { PinInput } from "@/components/PinInput";
 import { setPin } from "@/api/account";
 import { toast } from "react-toastify";
@@ -59,31 +58,51 @@ export default function SetPinModal({ open, setOpen, onSaved }: Props) {
 		}
 	};
 
+	const step = first === null ? 1 : 2;
+
 	return (
 		<UniversalModal
 			open={open}
 			onOpenChange={setOpen}
-			title={first === null ? "Create a PIN" : "Confirm your PIN"}
+			maxWidth={420}
+			title={step === 1 ? "Create a PIN" : "Confirm your PIN"}
 			description={
-				first === null
+				step === 1
 					? "Choose a 4-digit PIN to unlock the app, or skip it for now."
 					: "Enter the same 4 digits again."
 			}
 			footer={
-				<Button
-					variant="ghost"
+				<button
+					className="btn btn-ghost btn-block"
+					type="button"
 					disabled={saving}
-					onClick={() => setOpen(false)}
-					className="w-full text-muted-foreground">
+					onClick={() => setOpen(false)}>
 					Not now
-				</Button>
+				</button>
 			}>
-			<div className="flex w-full justify-center py-4">
+			<div className="stack-sm" style={{ alignItems: "center", gap: 16, padding: "4px 0 8px" }}>
+				{/* Step indicator: 1 enter, 2 confirm */}
+				<div className="row-f" style={{ gap: 6 }} aria-hidden="true">
+					{[1, 2].map((n) => (
+						<span
+							key={n}
+							style={{
+								width: 24,
+								height: 4,
+								borderRadius: 999,
+								background: n <= step ? "var(--brand)" : "var(--sunken)",
+							}}
+						/>
+					))}
+				</div>
+				<span className="t-over">Step {step} of 2</span>
 				<PinInput
 					onComplete={handleComplete}
 					error={error}
 					resetSignal={resetSignal}
 					disabled={saving}
+					hint={step === 1 ? "Pick 4 digits you'll remember" : "Re-enter to confirm"}
+					busyText="Saving…"
 				/>
 			</div>
 		</UniversalModal>

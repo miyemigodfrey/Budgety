@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type EmptyStateProps = {
@@ -12,6 +13,7 @@ type EmptyStateProps = {
 /**
  * Shown when a list or panel has no data yet. Keeps "nothing here" visually
  * distinct from "still loading" and from "something went wrong".
+ * Canvas `.empty` pattern (budgety.css).
  */
 export function EmptyState({
 	icon: Icon,
@@ -21,17 +23,15 @@ export function EmptyState({
 	className,
 }: EmptyStateProps) {
 	return (
-		<div
-			className={cn(
-				"w-full flex flex-col items-center justify-center text-center gap-2 rounded-xl border border-dashed border-border px-6 py-10",
-				className,
-			)}>
-			{Icon && <Icon className="size-8 text-muted-foreground" aria-hidden="true" />}
-			<p className="font-semibold text-foreground">{title}</p>
-			{description && (
-				<p className="text-sm text-muted-foreground max-w-sm">{description}</p>
+		<div className={cn("empty", className)}>
+			{Icon && (
+				<span className="empty-ic">
+					<Icon className="ic ic-xl" aria-hidden="true" />
+				</span>
 			)}
-			{action && <div className="mt-2">{action}</div>}
+			<h3 className="t-h3">{title}</h3>
+			{description && <p>{description}</p>}
+			{action && <div style={{ marginTop: 4 }}>{action}</div>}
 		</div>
 	);
 }
@@ -52,18 +52,15 @@ export function ErrorState({
 	className,
 }: ErrorStateProps) {
 	return (
-		<div
-			role="alert"
-			className={cn(
-				"w-full flex flex-col items-center justify-center text-center gap-3 rounded-xl border border-dashed border-danger/50 bg-danger-surface px-6 py-10",
-				className,
-			)}>
-			<p className="text-sm font-medium text-danger">{message}</p>
+		<div role="alert" className={cn("empty", className)}>
+			<span
+				className="empty-ic"
+				style={{ background: "var(--danger-soft)", color: "var(--danger)" }}>
+				<AlertTriangle className="ic ic-xl" aria-hidden="true" />
+			</span>
+			<h3 className="t-h3">{message}</h3>
 			{onRetry && (
-				<button
-					type="button"
-					onClick={onRetry}
-					className="text-sm font-semibold text-danger underline underline-offset-4 hover:no-underline">
+				<button type="button" className="btn btn-secondary btn-sm" onClick={onRetry}>
 					Try again
 				</button>
 			)}
