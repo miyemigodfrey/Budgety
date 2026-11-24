@@ -6,7 +6,8 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-	font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+	/* Plus Jakarta Sans everywhere (landing page, toasts, popovers); loaded in app/layout.tsx. */
+	font-family: var(--font-jakarta), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 	line-height: 1.5;
 	font-weight: 400;
 
